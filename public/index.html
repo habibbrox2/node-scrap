@@ -1,0 +1,1252 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>প্রথম আলো Scraper Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Bengali:wght@400;600;700&family=JetBrains+Mono:wght@400;600&family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --red: #e8162a;
+      --red-dim: #a50f1e;
+      --ink: #0d0d0d;
+      --paper: #f5f0e8;
+      --paper-2: #ede6d6;
+      --rule: #c8b99a;
+      --success: #1a6b2e;
+      --warn: #b85c00;
+      --mono: 'JetBrains Mono', monospace;
+      --serif: 'Noto Serif Bengali', serif;
+      --sans: 'Sora', sans-serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: var(--sans);
+      background: var(--paper);
+      color: var(--ink);
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--ink);
+      color: var(--paper);
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 4px solid var(--red);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      font-family: var(--serif);
+      font-size: 1.4rem;
+      font-weight: 700;
+      padding: 1rem 0;
+      letter-spacing: -0.02em;
+    }
+
+    .logo span { color: var(--red); }
+
+    .header-status {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-family: var(--mono);
+      font-size: 0.75rem;
+    }
+
+    .pulse-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #444;
+      flex-shrink: 0;
+    }
+    .pulse-dot.active {
+      background: var(--red);
+      animation: pulse 1.2s infinite;
+    }
+    .pulse-dot.idle { background: #3a3; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.3); }
+    }
+
+    /* ── Layout ── */
+    .main { display: grid; grid-template-columns: 280px 1fr; min-height: calc(100vh - 65px); }
+
+    /* ── Sidebar ── */
+    aside {
+      background: var(--ink);
+      color: var(--paper);
+      padding: 1.5rem;
+      border-right: 2px solid #222;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .nav-label {
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #666;
+      margin-bottom: 0.5rem;
+    }
+
+    nav a {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.6rem 0.8rem;
+      border-radius: 4px;
+      color: #aaa;
+      text-decoration: none;
+      font-size: 0.85rem;
+      transition: all 0.15s;
+      cursor: pointer;
+    }
+
+    nav a:hover, nav a.active {
+      background: #1a1a1a;
+      color: var(--paper);
+    }
+
+    nav a.active { border-left: 3px solid var(--red); padding-left: calc(0.8rem - 3px); }
+
+    .stat-pill {
+      background: #1a1a1a;
+      border-radius: 6px;
+      padding: 1rem;
+    }
+
+    .stat-pill .label { font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase; color: #666; }
+    .stat-pill .val {
+      font-family: var(--mono);
+      font-size: 1.6rem;
+      font-weight: 600;
+      color: var(--paper);
+      line-height: 1.2;
+      margin-top: 0.2rem;
+    }
+    .stat-pill .val.red { color: var(--red); }
+
+    /* ── Content ── */
+    .content {
+      padding: 2rem;
+      overflow-y: auto;
+    }
+
+    .page { display: none; }
+    .page.active { display: block; }
+
+    .page-title {
+      font-family: var(--serif);
+      font-size: 1.6rem;
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 2px solid var(--rule);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.6rem 1.2rem;
+      border: none;
+      border-radius: 4px;
+      font-family: var(--sans);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-decoration: none;
+    }
+
+    .btn-primary { background: var(--red); color: white; }
+    .btn-primary:hover { background: var(--red-dim); }
+    .btn-primary:disabled { background: #888; cursor: not-allowed; }
+    .btn-ghost { background: transparent; color: var(--ink); border: 1.5px solid var(--rule); }
+    .btn-ghost:hover { border-color: var(--ink); }
+    .btn-danger { background: transparent; color: #c00; border: 1.5px solid #c00; }
+    .btn-danger:hover { background: #c00; color: white; }
+
+    /* ── Cards ── */
+    .card {
+      background: white;
+      border: 1.5px solid var(--rule);
+      border-radius: 6px;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+    }
+
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+
+    .metric-card {
+      background: white;
+      border: 1.5px solid var(--rule);
+      border-radius: 6px;
+      padding: 1.25rem;
+    }
+
+    .metric-card .m-label { font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase; color: #888; }
+    .metric-card .m-val {
+      font-family: var(--mono);
+      font-size: 2rem;
+      font-weight: 600;
+      color: var(--ink);
+      line-height: 1.1;
+      margin: 0.25rem 0;
+    }
+    .metric-card .m-sub { font-size: 0.75rem; color: #888; }
+
+    /* ── Table ── */
+    .table-wrap { overflow-x: auto; }
+    .articles-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.85fr);
+      gap: 1rem;
+      align-items: start;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+    }
+
+    th {
+      background: var(--paper-2);
+      padding: 0.65rem 0.85rem;
+      text-align: left;
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #666;
+      border-bottom: 2px solid var(--rule);
+    }
+
+    td {
+      padding: 0.65rem 0.85rem;
+      border-bottom: 1px solid var(--paper-2);
+      vertical-align: top;
+    }
+
+    tr:hover td { background: var(--paper); }
+    tr.clickable-row { cursor: pointer; }
+    tr.selected-row td { background: #fff4ea; }
+
+    .tag {
+      display: inline-block;
+      background: var(--paper-2);
+      color: #555;
+      font-size: 0.68rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 2px;
+      font-family: var(--mono);
+    }
+
+    .tag.red { background: #fdecea; color: var(--red); }
+    .tag.green { background: #e6f4ea; color: var(--success); }
+
+    /* ── Log ── */
+    .log-box {
+      background: var(--ink);
+      color: #a0ffa0;
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      padding: 1rem;
+      border-radius: 6px;
+      height: 280px;
+      overflow-y: auto;
+      line-height: 1.6;
+    }
+
+    .log-entry { margin-bottom: 2px; }
+    .log-entry .ts { color: #555; }
+    .log-entry .stage-listing { color: #60b0ff; }
+    .log-entry .stage-article { color: #a0ffa0; }
+    .log-entry .stage-error { color: #ff6060; }
+
+    /* ── Cron ── */
+    .cron-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      border-radius: 4px;
+      background: var(--paper);
+      border: 1px solid var(--rule);
+      margin-bottom: 0.5rem;
+    }
+
+    .input {
+      padding: 0.5rem 0.75rem;
+      border: 1.5px solid var(--rule);
+      border-radius: 4px;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      background: white;
+      color: var(--ink);
+      transition: border-color 0.15s;
+    }
+
+    .input:focus { outline: none; border-color: var(--red); }
+
+    /* ── Articles search ── */
+    .search-bar {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .search-bar .input { flex: 1; }
+
+    .article-title a {
+      color: var(--ink);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.88rem;
+    }
+
+    .article-title a:hover { color: var(--red); }
+
+    .pagination {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-top: 1.5rem;
+    }
+
+    .page-btn {
+      width: 32px;
+      height: 32px;
+      border: 1.5px solid var(--rule);
+      background: white;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.1s;
+    }
+
+    .page-btn:hover { border-color: var(--red); color: var(--red); }
+    .page-btn.active { background: var(--red); border-color: var(--red); color: white; }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: #888;
+    }
+
+    .empty-state .icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+    .article-detail-card {
+      position: sticky;
+      top: 1rem;
+      min-height: 420px;
+    }
+
+    .article-detail-cover {
+      width: 100%;
+      display: block;
+      border-radius: 6px;
+      border: 1.5px solid var(--rule);
+      background: var(--paper-2);
+      margin-bottom: 1rem;
+    }
+
+    .article-detail-title {
+      font-family: var(--serif);
+      font-size: 1.3rem;
+      line-height: 1.45;
+      margin-bottom: 0.85rem;
+    }
+
+    .article-detail-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      margin-bottom: 0.9rem;
+    }
+
+    .article-detail-excerpt {
+      border-left: 3px solid var(--rule);
+      padding-left: 0.85rem;
+      margin-bottom: 1rem;
+      color: #5b5244;
+      line-height: 1.7;
+      font-size: 0.86rem;
+    }
+
+    .article-detail-body {
+      display: flex;
+      flex-direction: column;
+      gap: 0.9rem;
+      color: #2c261f;
+      line-height: 1.85;
+      font-size: 0.92rem;
+    }
+
+    .article-detail-body p { white-space: pre-wrap; }
+
+    .article-detail-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 1.2rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--paper-2);
+    }
+
+    .runs-timeline .run-item {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 1rem;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--paper-2);
+      font-size: 0.8rem;
+    }
+
+    .run-time { font-family: var(--mono); color: #888; font-size: 0.72rem; }
+    .run-info { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #fff3; border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; }
+
+    @media (max-width: 1080px) {
+      .articles-layout { grid-template-columns: 1fr; }
+      .article-detail-card { position: static; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">প্রথম আলো <span>Scraper</span></div>
+  <div class="header-status">
+    <div class="pulse-dot idle" id="hdrDot"></div>
+    <span id="hdrStatus">Idle</span>
+  </div>
+</header>
+
+<div class="main">
+  <!-- Sidebar -->
+  <aside>
+    <div>
+      <div class="nav-label">Navigation</div>
+      <nav>
+        <a onclick="showPage('dashboard')" class="active" id="nav-dashboard">📊 Dashboard</a>
+        <a onclick="showPage('articles')" id="nav-articles">📰 Articles</a>
+        <a onclick="showPage('mobiles')" id="nav-mobiles">📱 Mobiles</a>
+        <a onclick="showPage('scraper')" id="nav-scraper">⚙️ Scraper</a>
+        <a onclick="showPage('cron')" id="nav-cron">⏰ Cron Jobs</a>
+        <a onclick="showPage('api')" id="nav-api">🔌 API Docs</a>
+      </nav>
+    </div>
+
+    <div>
+      <div class="nav-label">Cache Stats</div>
+      <div class="stat-pill" style="margin-bottom:0.5rem">
+        <div class="label">Cached Articles</div>
+        <div class="val red" id="sb-total">—</div>
+      </div>
+      <div class="stat-pill" style="margin-bottom:0.5rem">
+        <div class="label">Cached Mobiles</div>
+        <div class="val" id="sb-mobiles">—</div>
+      </div>
+      <div class="stat-pill">
+        <div class="label">Total Runs</div>
+        <div class="val" id="sb-runs">—</div>
+      </div>
+    </div>
+
+    <div style="margin-top:auto">
+      <button class="btn btn-primary" style="width:100%" id="triggerBtn" onclick="triggerScrape()">
+        ▶ Scrape Now
+      </button>
+    </div>
+  </aside>
+
+  <!-- Content -->
+  <div class="content">
+
+    <!-- Dashboard -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-title">Dashboard</div>
+
+      <div class="grid-3">
+        <div class="metric-card">
+          <div class="m-label">Total Cached</div>
+          <div class="m-val" id="d-total">—</div>
+          <div class="m-sub">articles in cache</div>
+        </div>
+        <div class="metric-card">
+          <div class="m-label">Last Run</div>
+          <div class="m-val" style="font-size:1rem; padding-top:0.5rem" id="d-lastrun">Never</div>
+          <div class="m-sub" id="d-trigger">—</div>
+        </div>
+        <div class="metric-card">
+          <div class="m-label">Total Runs</div>
+          <div class="m-val" id="d-runs">0</div>
+          <div class="m-sub">since start</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 style="font-size:0.85rem; margin-bottom:1rem; color:#666; letter-spacing:0.08em; text-transform:uppercase">Categories</h3>
+        <div id="d-cats" style="display:flex; flex-wrap:wrap; gap:0.5rem">
+          <span style="color:#aaa; font-size:0.82rem">Loading...</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 style="font-size:0.85rem; margin-bottom:1rem; color:#666; letter-spacing:0.08em; text-transform:uppercase">Recent Runs</h3>
+        <div id="d-runs-list" class="runs-timeline"></div>
+      </div>
+    </div>
+
+    <!-- Articles -->
+    <div class="page" id="page-articles">
+      <div class="page-title">
+        Cached Articles
+        <a href="/api/cache/export" class="btn btn-ghost" download>⬇ Export JSON</a>
+      </div>
+
+      <div class="search-bar">
+        <input class="input" id="articleSearch" placeholder="Search titles..." oninput="searchArticles()" />
+        <input class="input" id="catFilter" placeholder="Category filter" oninput="searchArticles()" style="width:160px" />
+      </div>
+
+      <div class="articles-layout">
+        <div class="card" style="padding:0; margin-bottom:0">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Category</th>
+                  <th>Author</th>
+                  <th>Published</th>
+                  <th>Tags</th>
+                </tr>
+              </thead>
+              <tbody id="articlesBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card article-detail-card">
+          <div id="articleDetailContent">
+            <div class="empty-state" style="padding:2rem 1rem">
+              <div class="icon">📰</div>
+              <div>একটি article select করলে full details এখানে দেখা যাবে।</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pagination" id="pagination"></div>
+    </div>
+
+    <!-- Mobiles -->
+    <div class="page" id="page-mobiles">
+      <div class="page-title">
+        Cached Mobiles
+        <a href="/api/mobiles/export" class="btn btn-ghost" download>⬇ Export JSON</a>
+      </div>
+
+      <div class="search-bar">
+        <input class="input" id="mobileSearch" placeholder="Search mobiles..." oninput="searchMobiles()" />
+        <input class="input" id="mobileBrand" placeholder="Brand" oninput="searchMobiles()" style="width:160px" />
+        <input class="input" id="mobileStatus" placeholder="Status" oninput="searchMobiles()" style="width:140px" />
+      </div>
+
+      <div class="articles-layout">
+        <div class="card" style="padding:0; margin-bottom:0">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Model</th>
+                  <th>Brand</th>
+                  <th>Price</th>
+                  <th>Status</th>
+                  <th>Category</th>
+                </tr>
+              </thead>
+              <tbody id="mobilesBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card article-detail-card">
+          <div id="mobileDetailContent">
+            <div class="empty-state" style="padding:2rem 1rem">
+              <div class="icon">📱</div>
+              <div>একটি mobile select করলে full details এখানে দেখা যাবে।</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pagination" id="mobilesPagination"></div>
+    </div>
+
+    <!-- Scraper -->
+    <div class="page" id="page-scraper">
+      <div class="page-title">Scraper Control</div>
+
+      <div class="card" style="display:flex; gap:1rem; align-items:center; justify-content:space-between">
+        <div>
+          <div style="font-weight:600; margin-bottom:0.25rem">Manual Trigger</div>
+          <div style="font-size:0.82rem; color:#888">Immediately scrape the selected source and save to cache</div>
+        </div>
+        <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap; justify-content:flex-end">
+          <select class="input" id="sourceSelect" style="width:190px" onchange="setSelectedSource(this.value)">
+            <option value="">Loading sources...</option>
+          </select>
+          <button class="btn btn-primary" id="scrapeBtn" onclick="triggerScrape()" style="white-space:nowrap">
+            ▶ Start Scrape
+          </button>
+        </div>
+      </div>
+
+      <div class="card" style="display:flex; gap:1rem; align-items:center; justify-content:space-between">
+        <div>
+          <div style="font-weight:600; margin-bottom:0.25rem; color:#c00">Clear Cache</div>
+          <div style="font-size:0.82rem; color:#888">Delete all cached articles and mobiles (irreversible)</div>
+        </div>
+        <button class="btn btn-danger" onclick="clearCacheConfirm()">🗑 Clear Cache</button>
+      </div>
+
+      <div class="card">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem">
+          <h3 style="font-size:0.85rem; color:#666; letter-spacing:0.08em; text-transform:uppercase">Live Log</h3>
+          <span id="scrapeStatusBadge" class="tag">Idle</span>
+        </div>
+        <div class="log-box" id="logBox">
+          <div style="color:#555">Waiting for scrape run...</div>
+        </div>
+      </div>
+
+      <div class="card" id="lastResultCard" style="display:none">
+        <h3 style="font-size:0.85rem; margin-bottom:0.75rem; color:#666; letter-spacing:0.08em; text-transform:uppercase">Last Result</h3>
+        <div id="lastResultContent"></div>
+      </div>
+    </div>
+
+    <!-- Cron -->
+    <div class="page" id="page-cron">
+      <div class="page-title">Cron Jobs</div>
+
+      <div class="card" id="activeJobs">
+        <div style="font-weight:600; margin-bottom:0.75rem">Active Jobs</div>
+        <div id="cronList"><span style="color:#aaa; font-size:0.82rem">Loading...</span></div>
+      </div>
+
+      <div class="card">
+        <div style="font-weight:600; margin-bottom:1rem">Add New Cron Job</div>
+        <div style="display:flex; gap:0.75rem; flex-wrap:wrap">
+          <div>
+            <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">SCHEDULE (cron syntax)</div>
+            <input class="input" id="cronSchedule" placeholder="0 * * * *" style="width:180px" />
+          </div>
+          <div>
+            <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">JOB NAME</div>
+            <input class="input" id="cronName" placeholder="my-job" style="width:140px" />
+          </div>
+          <div style="align-self:flex-end">
+            <button class="btn btn-primary" onclick="addCron()">+ Add</button>
+          </div>
+        </div>
+        <div style="margin-top:1rem; font-size:0.75rem; color:#888">
+          <strong>Presets:</strong>
+          <button class="btn btn-ghost" style="padding:0.25rem 0.5rem; font-size:0.72rem; margin-left:0.5rem" onclick="document.getElementById('cronSchedule').value='0 * * * *'">Every hour</button>
+          <button class="btn btn-ghost" style="padding:0.25rem 0.5rem; font-size:0.72rem; margin-left:0.25rem" onclick="document.getElementById('cronSchedule').value='*/30 * * * *'">Every 30 min</button>
+          <button class="btn btn-ghost" style="padding:0.25rem 0.5rem; font-size:0.72rem; margin-left:0.25rem" onclick="document.getElementById('cronSchedule').value='0 6 * * *'">Daily 6AM</button>
+          <button class="btn btn-ghost" style="padding:0.25rem 0.5rem; font-size:0.72rem; margin-left:0.25rem" onclick="document.getElementById('cronSchedule').value='0 */6 * * *'">Every 6h</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- API Docs -->
+    <div class="page" id="page-api">
+      <div class="page-title">API Reference</div>
+
+      <div class="card">
+        <div style="font-family:var(--mono); font-size:0.82rem; line-height:2">
+          <div style="margin-bottom:1rem; color:#888; font-size:0.78rem">Base URL: <strong style="color:var(--ink)">http://localhost:3000</strong></div>
+
+          <div style="margin-bottom:1.25rem">
+            <span class="tag green">GET</span> <strong>/api/status</strong><br/>
+            <span style="color:#888; font-size:0.78rem">Current scraper status + cache stats + active cron jobs</span>
+          </div>
+
+          <div style="margin-bottom:1.25rem">
+            <span class="tag red">POST</span> <strong>/api/scrape</strong><br/>
+            <span style="color:#888; font-size:0.78rem">Manually trigger a scrape (runs in background)</span>
+          </div>
+
+          <div style="margin-bottom:1.25rem">
+            <span class="tag green">GET</span> <strong>/api/articles?page=1&limit=20&category=&search=</strong><br/>
+            <span style="color:#888; font-size:0.78rem">Paginated cached articles with optional filters</span>
+          </div>
+
+          <div style="margin-bottom:1.25rem">
+            <span class="tag green">GET</span> <strong>/api/mobiles?page=1&limit=20&brand=&status=&search=</strong><br/>
+            <span style="color:#888; font-size:0.78rem">Paginated cached mobiles with optional filters</span>
+          </div>
+
+          <div style="margin-bottom:1.25rem">
+            <span class="tag green">GET</span> <strong>/api/articles/search?url=https://...</strong><br/>
+            <span style="color:#888; font-size:0.78rem">Find a specific article by its URL</span>
+          </div>
+
+          <div style="margin-bottom:1.25rem">
+            <span class="tag green">GET</span> <strong>/api/mobiles/search?url=https://...</strong><br/>
+            <span style="color:#888; font-size:0.78rem">Find a specific mobile by its URL</span>
+          </div>
+
+          <div style="margin-bottom:1.25rem">
+            <span class="tag green">GET</span> <strong>/api/stats</strong><br/>
+            <span style="color:#888; font-size:0.78rem">Detailed statistics and run history</span>
+          </div>
+
+          <div style="margin-bottom:1.25rem">
+            <span class="tag green">GET</span> <strong>/api/cache/export</strong><br/>
+            <span style="color:#888; font-size:0.78rem">Download full cache as JSON file</span>
+          </div>
+
+          <div style="margin-bottom:1.25rem">
+            <span class="tag" style="background:#fdecea;color:#c00">DELETE</span> <strong>/api/cache</strong><br/>
+            <span style="color:#888; font-size:0.78rem">Clear all cached articles</span>
+          </div>
+
+          <div style="margin-bottom:1.25rem">
+            <span class="tag red">POST</span> <strong>/api/cron</strong> <span style="color:#888">body: { action, schedule, name }</span><br/>
+            <span style="color:#888; font-size:0.78rem">Manage cron jobs — action: start | stop | list</span>
+          </div>
+
+          <div>
+            <span class="tag green">GET</span> <strong>/api/scrape/log</strong><br/>
+            <span style="color:#888; font-size:0.78rem">Get live scrape log entries</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="background:var(--ink); border-color:#333; color:#a0ffa0; font-family:var(--mono); font-size:0.78rem; line-height:1.8">
+        <div style="color:#666; margin-bottom:0.75rem"># Example curl commands</div>
+        <div style="margin-bottom:0.5rem"><span style="color:#60b0ff">curl</span> http://localhost:3000/api/status</div>
+        <div style="margin-bottom:0.5rem"><span style="color:#60b0ff">curl</span> -X POST http://localhost:3000/api/scrape -H "Content-Type: application/json" -d '{"source":"gsmarena_bd"}'</div>
+        <div style="margin-bottom:0.5rem"><span style="color:#60b0ff">curl</span> "http://localhost:3000/api/articles?page=1&limit=10&search=ক্রিকেট"</div>
+        <div style="margin-bottom:0.5rem"><span style="color:#60b0ff">curl</span> "http://localhost:3000/api/mobiles?page=1&limit=10&brand=Honor"</div>
+        <div style="margin-bottom:0.5rem"><span style="color:#60b0ff">curl</span> -X POST http://localhost:3000/api/cron \<br/>
+        &nbsp;&nbsp;-H "Content-Type: application/json" \<br/>
+        &nbsp;&nbsp;-d '{"action":"start","schedule":"0 */3 * * *","name":"every-3h"}'</div>
+        <div><span style="color:#60b0ff">curl</span> http://localhost:3000/api/cache/export -o articles.json</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  let currentPage = 1;
+  let pollInterval = null;
+  let statusPollInterval = null;
+  let currentArticles = [];
+  let selectedArticleUrl = null;
+  let currentMobiles = [];
+  let selectedMobileUrl = null;
+  let mobilesPage = 1;
+  let selectedSource = '';
+  let availableSources = [];
+
+  // ── Navigation ──
+  function showPage(name) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+    document.getElementById('page-' + name)?.classList.add('active');
+    document.getElementById('nav-' + name)?.classList.add('active');
+
+    if (name === 'articles') loadArticles();
+    if (name === 'mobiles') loadMobiles();
+    if (name === 'cron') loadCronJobs();
+    if (name === 'dashboard') loadDashboard();
+  }
+
+  // ── API helpers ──
+  async function api(path, opts = {}) {
+    const r = await fetch(path, opts);
+    return r.json();
+  }
+
+  // ── Status poll ──
+  async function pollStatus() {
+    try {
+      const data = await api('/api/status');
+      const running = data.scraper?.running;
+
+      // Header
+      const dot = document.getElementById('hdrDot');
+      const hdrStatus = document.getElementById('hdrStatus');
+      dot.className = 'pulse-dot ' + (running ? 'active' : 'idle');
+      hdrStatus.textContent = running ? `Scraping (${data.scraper.trigger})` : 'Idle';
+
+      // Sidebar
+      document.getElementById('sb-total').textContent = data.cache?.totalCached ?? '—';
+      document.getElementById('sb-mobiles').textContent = data.cache?.totalMobilesCached ?? '—';
+      document.getElementById('sb-runs').textContent = data.cache?.totalRuns ?? '—';
+
+      // Trigger button
+      const btn = document.getElementById('triggerBtn');
+      const scrapeBtn = document.getElementById('scrapeBtn');
+      if (running) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> Running...';
+        if (scrapeBtn) { scrapeBtn.disabled = true; scrapeBtn.innerHTML = '<span class="spinner"></span> Running...'; }
+      } else {
+        btn.disabled = false;
+        btn.innerHTML = '▶ Scrape Now';
+        if (scrapeBtn) { scrapeBtn.disabled = false; scrapeBtn.innerHTML = '▶ Start Scrape'; }
+      }
+
+      // Scraper page log
+      const badge = document.getElementById('scrapeStatusBadge');
+      if (badge) {
+        badge.textContent = running ? 'Running' : 'Idle';
+        badge.className = 'tag ' + (running ? 'red' : '');
+      }
+
+      if (running) {
+        const logData = await api('/api/scrape/log');
+        renderLog(logData.log);
+        if (!pollInterval) pollInterval = setInterval(refreshLog, 1500);
+      } else {
+        if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+        if (data.scraper?.lastResult) renderLastResult(data.scraper.lastResult);
+      }
+
+    } catch(e) { /* server offline */ }
+  }
+
+  async function refreshLog() {
+    const data = await api('/api/scrape/log');
+    renderLog(data.log);
+    if (!data.running && pollInterval) {
+      clearInterval(pollInterval);
+      pollInterval = null;
+      loadDashboard();
+    }
+  }
+
+  function renderLog(log) {
+    const box = document.getElementById('logBox');
+    if (!box || !log?.length) return;
+    box.innerHTML = log.slice(-100).map(e => {
+      const cls = `stage-${e.stage || ''}`;
+      const url = e.url ? `<span style="color:#666"> ${e.url.replace('https://www.prothomalo.com', '')}</span>` : '';
+      return `<div class="log-entry"><span class="ts">[${e.time?.slice(11,19) || '--'}]</span> <span class="${cls}">${e.message || ''}</span>${url}</div>`;
+    }).join('');
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function renderLastResult(result) {
+    const card = document.getElementById('lastResultCard');
+    const content = document.getElementById('lastResultContent');
+    if (!card || !content) return;
+    card.style.display = 'block';
+    if (result.error) {
+      content.innerHTML = `<span class="tag red">Error</span> <span style="font-family:var(--mono);font-size:0.8rem">${result.error}</span>`;
+    } else {
+      content.innerHTML = `
+        <div style="display:flex; gap:1rem; flex-wrap:wrap">
+          <span class="tag green">Success</span>
+          <span style="font-size:0.82rem">Scraped: <strong>${result.total}</strong></span>
+          <span style="font-size:0.82rem">Saved: <strong>${result.success}</strong></span>
+          <span style="font-size:0.82rem">New in cache: <strong>${result.addedToCache || 0}</strong></span>
+          <span style="font-size:0.82rem">Errors: <strong>${result.errors?.length || 0}</strong></span>
+        </div>`;
+    }
+  }
+
+  // ── Dashboard ──
+  async function loadDashboard() {
+    const stats = await api('/api/stats');
+    document.getElementById('d-total').textContent = stats.totalCached ?? 0;
+    document.getElementById('d-runs').textContent = stats.totalRuns ?? 0;
+
+    const lr = stats.recentRuns?.[0];
+    if (lr) {
+      document.getElementById('d-lastrun').textContent = new Date(lr.runAt).toLocaleString('bn-BD');
+      document.getElementById('d-trigger').textContent = `trigger: ${lr.trigger}`;
+    }
+
+    // Categories
+    const cats = stats.categories || {};
+    const catEl = document.getElementById('d-cats');
+    if (Object.keys(cats).length === 0) {
+      catEl.innerHTML = '<span style="color:#aaa;font-size:0.82rem">No data yet</span>';
+    } else {
+      catEl.innerHTML = Object.entries(cats)
+        .sort((a,b) => b[1]-a[1])
+        .map(([cat, count]) => `<span class="tag">${cat} <strong>${count}</strong></span>`)
+        .join('');
+    }
+
+    // Runs list
+    const runs = stats.recentRuns || [];
+    const runsEl = document.getElementById('d-runs-list');
+    if (!runs.length) {
+      runsEl.innerHTML = '<span style="color:#aaa;font-size:0.82rem">No runs yet</span>';
+    } else {
+      runsEl.innerHTML = runs.map(r => `
+        <div class="run-item">
+          <div class="run-time">${new Date(r.runAt).toLocaleString('bn-BD', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'})}</div>
+          <div class="run-info">
+            <span class="tag green">+${r.addedToCache || 0} new</span>
+            <span class="tag">${r.success}/${r.scraped} ok</span>
+            ${r.errors > 0 ? `<span class="tag red">${r.errors} errors</span>` : ''}
+            <span style="font-size:0.72rem; color:#888">${r.trigger}</span>
+          </div>
+        </div>`).join('');
+    }
+  }
+
+  // ── Articles ──
+  let articlesPage = 1;
+  async function loadArticles(page = 1) {
+    articlesPage = page;
+    const search = document.getElementById('articleSearch')?.value || '';
+    const cat = document.getElementById('catFilter')?.value || '';
+    const data = await api(`/api/articles?page=${page}&limit=15&search=${encodeURIComponent(search)}&category=${encodeURIComponent(cat)}`);
+    const tbody = document.getElementById('articlesBody');
+    currentArticles = data.articles || [];
+
+    if (currentArticles.length) {
+      const hasSelected = currentArticles.some(article => article.url === selectedArticleUrl);
+      if (!selectedArticleUrl || !hasSelected) {
+        selectedArticleUrl = currentArticles[0].url;
+      }
+    } else {
+      selectedArticleUrl = null;
+    }
+
+    if (!currentArticles.length) {
+      tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="icon">📭</div><div>No articles cached yet. Run a scrape first.</div></div></td></tr>`;
+    } else {
+      renderArticleDetails(currentArticles.find(article => article.url === selectedArticleUrl) || currentArticles[0]);
+      tbody.innerHTML = currentArticles.map(a => `
+        <tr class="clickable-row ${a.url === selectedArticleUrl ? 'selected-row' : ''}" onclick="selectArticle('${escapeJs(a.url)}')">
+          <td class="article-title"><a href="${a.url}" target="_blank" onclick="event.stopPropagation()">${escapeHtml(a.title || '(no title)')}</a></td>
+          <td><span class="tag">${a.category || '—'}</span></td>
+          <td style="font-size:0.78rem;color:#666">${a.author || '—'}</td>
+          <td style="font-size:0.75rem;font-family:var(--mono);color:#888;white-space:nowrap">${a.publishedText || a.publishedAt?.slice(0,10) || '—'}</td>
+          <td style="font-size:0.72rem">${(a.tags||[]).slice(0,3).map(t=>`<span class="tag" style="margin:1px">${t}</span>`).join('')}</td>
+        </tr>`).join('');
+    }
+
+    // Pagination
+    const pg = data.pagination;
+    const pagEl = document.getElementById('pagination');
+    if (pg.pages <= 1) { pagEl.innerHTML = ''; return; }
+    let html = '';
+    if (pg.page > 1) html += `<button class="page-btn" onclick="loadArticles(${pg.page-1})">‹</button>`;
+    for (let i = Math.max(1, pg.page-2); i <= Math.min(pg.pages, pg.page+2); i++) {
+      html += `<button class="page-btn ${i===pg.page?'active':''}" onclick="loadArticles(${i})">${i}</button>`;
+    }
+    if (pg.page < pg.pages) html += `<button class="page-btn" onclick="loadArticles(${pg.page+1})">›</button>`;
+    pagEl.innerHTML = html;
+  }
+
+  function searchArticles() {
+    clearTimeout(window._searchTimer);
+    window._searchTimer = setTimeout(() => loadArticles(1), 300);
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function escapeJs(value) {
+    return String(value ?? '')
+      .replace(/\\/g, '\\\\')
+      .replace(/'/g, "\\'");
+  }
+
+  function selectArticle(url) {
+    selectedArticleUrl = url;
+    const article = currentArticles.find(item => item.url === url) || null;
+    renderArticleDetails(article);
+    document.querySelectorAll('#articlesBody tr.clickable-row').forEach(row => row.classList.remove('selected-row'));
+    document.querySelector(`#articlesBody tr.clickable-row[onclick="selectArticle('${escapeJs(url)}')"]`)?.classList.add('selected-row');
+  }
+
+  function renderArticleDetails(article) {
+    const container = document.getElementById('articleDetailContent');
+    if (!container) return;
+
+    if (!article) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="icon">📰</div>
+          <div>Select an article to view its details.</div>
+        </div>`;
+      return;
+    }
+
+    const meta = [
+      article.category,
+      article.author,
+      article.publishedText || article.publishedAt
+    ].filter(Boolean);
+
+    const tags = (article.tags || [])
+      .map(tag => `<span class="tag">${escapeHtml(tag)}</span>`)
+      .join('');
+
+    const paragraphs = String(article.content || article.excerpt || '')
+      .split(/\n{2,}/)
+      .map(p => p.trim())
+      .filter(Boolean)
+      .map(p => `<p>${escapeHtml(p)}</p>`)
+      .join('');
+
+    container.innerHTML = `
+      ${article.imageUrl ? `<img class="article-detail-cover" src="${escapeHtml(article.imageUrl)}" alt="${escapeHtml(article.title || 'Article image')}">` : ''}
+      <div class="article-detail-title">${escapeHtml(article.title || '(no title)')}</div>
+      ${meta.length ? `<div class="article-detail-meta">${meta.map(item => `<span class="tag">${escapeHtml(item)}</span>`).join('')}</div>` : ''}
+      ${article.excerpt ? `<div class="article-detail-excerpt">${escapeHtml(article.excerpt)}</div>` : ''}
+      ${tags ? `<div class="article-detail-meta">${tags}</div>` : ''}
+      <div class="article-detail-body">${paragraphs || '<p>No article content available.</p>'}</div>
+      <div class="article-detail-actions">
+        <a class="btn btn-primary" href="${escapeHtml(article.url)}" target="_blank" rel="noopener noreferrer">Open Source</a>
+        <button class="btn btn-secondary" onclick="copyArticleUrl('${escapeJs(article.url)}')">Copy URL</button>
+      </div>`;
+  }
+
+  async function copyArticleUrl(url) {
+    try {
+      await navigator.clipboard.writeText(url);
+      alert('Article URL copied');
+    } catch (error) {
+      alert('Could not copy article URL');
+    }
+  }
+
+  // ── Mobiles ──
+  async function loadMobiles(page = 1) {
+    mobilesPage = page;
+    const search = document.getElementById('mobileSearch')?.value || '';
+    const brand = document.getElementById('mobileBrand')?.value || '';
+    const status = document.getElementById('mobileStatus')?.value || '';
+
+    const data = await api(`/api/mobiles?page=${page}&limit=15&search=${encodeURIComponent(search)}&brand=${encodeURIComponent(brand)}&status=${encodeURIComponent(status)}`);
+    const tbody = document.getElementById('mobilesBody');
+    currentMobiles = data.mobiles || [];
+
+    if (currentMobiles.length) {
+      const hasSelected = currentMobiles.some(item => item.url === selectedMobileUrl);
+      if (!selectedMobileUrl || !hasSelected) {
+        selectedMobileUrl = currentMobiles[0].url;
+      }
+    } else {
+      selectedMobileUrl = null;
+    }
+
+    if (!currentMobiles.length) {
+      tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="icon">📱</div><div>No mobiles cached yet. Select source "gsmarena_bd" and run a scrape.</div></div></td></tr>`;
+    } else {
+      renderMobileDetails(currentMobiles.find(item => item.url === selectedMobileUrl) || currentMobiles[0]);
+      tbody.innerHTML = currentMobiles.map(m => `
+        <tr class="clickable-row ${m.url === selectedMobileUrl ? 'selected-row' : ''}" onclick="selectMobile('${escapeJs(m.url)}')">
+          <td class="article-title"><a href="${m.url}" target="_blank" onclick="event.stopPropagation()">${escapeHtml(m.title || '(no title)')}</a></td>
+          <td><span class="tag">${escapeHtml(m.brand || '—')}</span></td>
+          <td style="font-size:0.78rem;color:#666">${escapeHtml(m.price || m.priceText || '—')}</td>
+          <td><span class="tag">${escapeHtml(m.status || '—')}</span></td>
+          <td style="font-size:0.78rem;color:#666">${escapeHtml(m.productCategory || m.category || '—')}</td>
+        </tr>`).join('');
+    }
+
+    const pg = data.pagination;
+    const pagEl = document.getElementById('mobilesPagination');
+    if (!pg || pg.pages <= 1) { pagEl.innerHTML = ''; return; }
+    let html = '';
+    if (pg.page > 1) html += `<button class="page-btn" onclick="loadMobiles(${pg.page-1})">‹</button>`;
+    for (let i = Math.max(1, pg.page-2); i <= Math.min(pg.pages, pg.page+2); i++) {
+      html += `<button class="page-btn ${i===pg.page?'active':''}" onclick="loadMobiles(${i})">${i}</button>`;
+    }
+    if (pg.page < pg.pages) html += `<button class="page-btn" onclick="loadMobiles(${pg.page+1})">›</button>`;
+    pagEl.innerHTML = html;
+  }
+
+  function searchMobiles() {
+    clearTimeout(window._mobileSearchTimer);
+    window._mobileSearchTimer = setTimeout(() => loadMobiles(1), 300);
+  }
+
+  function selectMobile(url) {
+    selectedMobileUrl = url;
+    const mobile = currentMobiles.find(item => item.url === url) || null;
+    renderMobileDetails(mobile);
+    document.querySelectorAll('#mobilesBody tr.clickable-row').forEach(row => row.classList.remove('selected-row'));
+    document.querySelector(`#mobilesBody tr.clickable-row[onclick="selectMobile('${escapeJs(url)}')"]`)?.classList.add('selected-row');
+  }
+
+  function renderMobileDetails(mobile) {
+    const container = document.getElementById('mobileDetailContent');
+    if (!container) return;
+
+    if (!mobile) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="icon">📱</div>
+          <div>Select a mobile to view its details.</div>
+        </div>`;
+      return;
+    }
+
+    const meta = [
+      mobile.brand,
+      mobile.productCategory || mobile.category,
+      mobile.status,
+      mobile.price,
+    ].filter(Boolean);
+
+    const tags = (mobile.tags || [])
+      .map(tag => `<span class="tag">${escapeHtml(tag)}</span>`)
+      .join('');
+
+    const specLines = [];
+    const keySpecs = mobile.keySpecs || {};
+    Object.entries(keySpecs).forEach(([k, v]) => {
+      specLines.push(`<div><span class="tag">${escapeHtml(k)}</span> ${escapeHtml(Array.isArray(v) ? v.join(' | ') : v)}</div>`);
+    });
+
+    container.innerHTML = `
+      ${mobile.imageUrl ? `<img class="article-detail-cover" src="${escapeHtml(mobile.imageUrl)}" alt="${escapeHtml(mobile.title || 'Mobile image')}">` : ''}
+      <div class="article-detail-title">${escapeHtml(mobile.title || '(no title)')}</div>
+      ${meta.length ? `<div class="article-detail-meta">${meta.map(item => `<span class="tag">${escapeHtml(item)}</span>`).join('')}</div>` : ''}
+      ${tags ? `<div class="article-detail-meta">${tags}</div>` : ''}
+      <div class="article-detail-body">${specLines.length ? specLines.join('') : '<p>No key specs available.</p>'}</div>
+      <div class="article-detail-actions">
+        <a class="btn btn-primary" href="${escapeHtml(mobile.url)}" target="_blank" rel="noopener noreferrer">Open Source</a>
+        <button class="btn btn-secondary" onclick="copyArticleUrl('${escapeJs(mobile.url)}')">Copy URL</button>
+      </div>`;
+  }
+
+  function setSelectedSource(value) {
+    selectedSource = value || '';
+    try {
+      localStorage.setItem('scrapeSource', selectedSource);
+    } catch {}
+  }
+
+  async function loadSources() {
+    const data = await api('/api/status');
+    availableSources = data.sources || [];
+    const def = (data.defaultSource || 'prothomalo').toString();
+
+    const sel = document.getElementById('sourceSelect');
+    if (!sel) return;
+
+    const saved = (() => {
+      try { return localStorage.getItem('scrapeSource') || ''; } catch { return ''; }
+    })();
+
+    selectedSource = saved || def || 'prothomalo';
+
+    sel.innerHTML = availableSources.length
+      ? availableSources.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('')
+      : `<option value="prothomalo">prothomalo</option>`;
+
+    sel.value = selectedSource;
+  }
+
+  // ── Scraper trigger ──
+  async function triggerScrape() {
+    if (document.getElementById('triggerBtn').disabled) return;
+    await api('/api/scrape', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ source: selectedSource || undefined }),
+    });
+    showPage('scraper');
+    setTimeout(pollStatus, 500);
+  }
+
+  // ── Clear cache ──
+  async function clearCacheConfirm() {
+    if (!confirm('Are you sure? This will delete all cached articles and mobiles.')) return;
+    await api('/api/cache', { method: 'DELETE' });
+    loadDashboard();
+  }
+
+  // ── Cron ──
+  async function loadCronJobs() {
+    const data = await api('/api/status');
+    const cronList = document.getElementById('cronList');
+    const jobs = data.activeCrons || [];
+    if (!jobs.length) {
+      cronList.innerHTML = '<span style="color:#aaa;font-size:0.82rem">No active cron jobs</span>';
+    } else {
+      cronList.innerHTML = jobs.map(j => `
+        <div class="cron-row">
+          <span class="tag green">Active</span>
+          <span style="font-family:var(--mono);font-size:0.82rem;flex:1">${j}</span>
+          <button class="btn btn-danger" style="padding:0.3rem 0.6rem;font-size:0.75rem" onclick="stopCron('${j}')">Stop</button>
+        </div>`).join('');
+    }
+  }
+
+  async function addCron() {
+    const schedule = document.getElementById('cronSchedule').value.trim();
+    const name = document.getElementById('cronName').value.trim() || 'custom';
+    if (!schedule) return alert('Enter a cron schedule');
+    const r = await api('/api/cron', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ action: 'start', schedule, name })
+    });
+    if (r.error) return alert(r.error);
+    loadCronJobs();
+  }
+
+  async function stopCron(name) {
+    await api('/api/cron', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ action: 'stop', name })
+    });
+    loadCronJobs();
+  }
+
+  // ── Init ──
+  loadDashboard();
+  loadSources();
+  pollStatus();
+  statusPollInterval = setInterval(pollStatus, 3000);
+</script>
+</body>
+</html>

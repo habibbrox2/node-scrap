@@ -1,0 +1,147 @@
+{
+  "lastRun": "2026-04-24T17:36:17.063Z",
+  "totalRuns": 14,
+  "totalArticles": 25,
+  "runs": [
+    {
+      "runAt": "2026-04-24T17:36:17.063Z",
+      "scraped": 19,
+      "success": 19,
+      "errors": 0,
+      "addedToCache": 7,
+      "trigger": "manual",
+      "pushed": false,
+      "pushSuccess": false,
+      "pushedCount": 0,
+      "pushUrl": null
+    },
+    {
+      "runAt": "2026-04-24T17:29:53.449Z",
+      "scraped": 18,
+      "success": 18,
+      "errors": 0,
+      "addedToCache": 18,
+      "trigger": "manual",
+      "pushed": false,
+      "pushSuccess": false,
+      "pushedCount": 0,
+      "pushUrl": null
+    },
+    {
+      "runAt": "2026-04-24T17:08:22.151Z",
+      "scraped": 18,
+      "success": 18,
+      "errors": 0,
+      "addedToCache": 0,
+      "trigger": "manual",
+      "pushed": false,
+      "pushSuccess": false,
+      "pushedCount": 0,
+      "pushUrl": null
+    },
+    {
+      "runAt": "2026-04-24T17:00:20.390Z",
+      "scraped": 18,
+      "success": 18,
+      "errors": 0,
+      "addedToCache": 2,
+      "trigger": "cron:hourly",
+      "pushed": false,
+      "pushSuccess": false,
+      "pushedCount": 0,
+      "pushUrl": null
+    },
+    {
+      "runAt": "2026-04-24T16:56:20.967Z",
+      "scraped": 18,
+      "success": 18,
+      "errors": 0,
+      "addedToCache": 9,
+      "trigger": "manual",
+      "pushed": false,
+      "pushSuccess": false,
+      "pushedCount": 0,
+      "pushUrl": null
+    },
+    {
+      "runAt": "2026-04-24T16:34:35.934Z",
+      "scraped": 19,
+      "success": 19,
+      "errors": 0,
+      "addedToCache": 0,
+      "trigger": "manual",
+      "pushed": false,
+      "pushSuccess": false,
+      "pushedCount": 0,
+      "pushUrl": null
+    },
+    {
+      "runAt": "2026-04-24T16:00:01.778Z",
+      "scraped": 1,
+      "success": 0,
+      "errors": 1,
+      "addedToCache": 0,
+      "trigger": "cron:hourly"
+    },
+    {
+      "runAt": "2026-04-24T15:52:39.727Z",
+      "scraped": 1,
+      "success": 0,
+      "errors": 1,
+      "addedToCache": 0,
+      "trigger": "manual"
+    },
+    {
+      "runAt": "2026-04-24T15:44:08.964Z",
+      "scraped": 1,
+      "success": 0,
+      "errors": 1,
+      "addedToCache": 0,
+      "trigger": "manual"
+    },
+    {
+      "runAt": "2026-04-24T15:43:01.011Z",
+      "scraped": 19,
+      "success": 19,
+      "errors": 0,
+      "addedToCache": 19,
+      "trigger": "manual",
+      "pushed": false,
+      "pushSuccess": false,
+      "pushedCount": 0,
+      "pushUrl": null
+    },
+    {
+      "runAt": "2026-04-24T15:41:55.892Z",
+      "scraped": 1,
+      "success": 0,
+      "errors": 1,
+      "addedToCache": 0,
+      "trigger": "manual"
+    },
+    {
+      "runAt": "2026-04-24T15:32:03.989Z",
+      "scraped": 1,
+      "success": 0,
+      "errors": 1,
+      "addedToCache": 0,
+      "trigger": "manual"
+    },
+    {
+      "runAt": "2026-04-24T15:30:19.987Z",
+      "scraped": 1,
+      "success": 0,
+      "errors": 1,
+      "addedToCache": 0,
+      "trigger": "manual"
+    },
+    {
+      "runAt": "2026-04-24T15:29:56.929Z",
+      "scraped": 1,
+      "success": 0,
+      "errors": 1,
+      "addedToCache": 0,
+      "trigger": "manual"
+    }
+  ]
+}
