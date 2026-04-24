@@ -12,13 +12,24 @@ const SCRAPERS = {
   shiksha: dainikshiksha,
 };
 
+const PRIMARY_SOURCES = [
+  'prothomalo',
+  'ittefaq',
+  'gsmarena_bd',
+  'dainikshiksha',
+];
+
 function getScraper(source) {
   const key = (source || 'prothomalo').toString().trim().toLowerCase();
   return SCRAPERS[key] || SCRAPERS.prothomalo;
 }
 
-function listSources() {
-  return Object.keys(SCRAPERS);
+function listSources(options = {}) {
+  if (options && options.includeAliases) {
+    return Object.keys(SCRAPERS);
+  }
+
+  return PRIMARY_SOURCES.slice();
 }
 
 module.exports = {

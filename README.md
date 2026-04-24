@@ -1,14 +1,21 @@
-# প্রথম আলো Scraper
+# Brox Scraper
 
-প্রথম আলোর সর্বশেষ নিবন্ধগুলো স্ক্র্যাপ করে local cache-এ সংরক্ষণ করে এবং REST API-এর মাধ্যমে সরবরাহ করে।
+Brox Scraper is a multi-source scraping dashboard that collects content, stores it in a local JSON cache, and exposes it via a REST API. It also supports scheduled scraping via cron jobs.
 
-## Features
+Default dashboard: `http://localhost:9999/`
 
-- 🕷️ **Scraper** — prothomalo.com/collection/latest থেকে নিবন্ধ সংগ্রহ করে
-- 💾 **Local Cache** — JSON ফাইলে সংরক্ষণ, deduplication সহ (max 500 articles)
-- 🔌 **REST API** — Express.js server, filtering ও pagination সহ
-- ⏰ **Cron Jobs** — node-cron দিয়ে scheduled scraping (default: every hour)
-- 🖥️ **Dashboard** — সুন্দর web UI http://localhost:3000 এ
+## Key Features
+
+- Web dashboard to trigger scrapes and view live logs
+- Source selector with default `All` (runs all supported sources sequentially)
+- Local cache (articles + mobiles) with deduplication
+- REST API with pagination and search
+- Cron jobs (hourly by default) via `node-cron`
+- Optional push to an external endpoint after scraping
+
+## Supported Sources
+
+The exact list can be viewed from the dashboard dropdown or via `GET /api/status`.
 
 ## Quick Start
 
@@ -17,69 +24,68 @@ npm install
 npm start
 ```
 
-Server চালু হবে: http://localhost:3000
+Open `http://localhost:9999/`.
 
-## API Endpoints
+## Configuration (Environment Variables)
+
+- `PORT` (default: `9999`)
+- `SCRAPER_SOURCE` (default: `prothomalo`) — used only when API callers omit `source`
+- `SCRAPER_CRON_SCHEDULE` (default: `0 * * * *`)
+- `PUSH_ENDPOINT_URL` — enable push after scraping
+- `PUSH_ENDPOINT_HEADERS_JSON` — extra headers as JSON, e.g. `{"Authorization":"Bearer ..."}`
+- `PUSH_ENDPOINT_TIMEOUT_MS` (default: `30000`)
+
+## API
+
+### Core Endpoints
 
 | Method | URL | Description |
 |--------|-----|-------------|
-| GET | `/api/status` | Scraper status + cache stats |
-| POST | `/api/scrape` | Manual scrape trigger |
+| GET | `/api/status` | Status + cache stats + sources |
+| POST | `/api/scrape` | Start a scrape run |
+| GET | `/api/scrape/log` | Live scrape log |
 | GET | `/api/articles` | Cached articles (paginated) |
 | GET | `/api/articles/search?url=` | Article by URL |
-| GET | `/api/stats` | Detailed statistics |
-| GET | `/api/cache/export` | Download full cache JSON |
-| DELETE | `/api/cache` | Clear all cache |
-| POST | `/api/cron` | Manage cron jobs |
-| GET | `/api/scrape/log` | Live scrape log |
+| GET | `/api/mobiles` | Cached mobiles (paginated) |
+| GET | `/api/stats` | Statistics |
+| GET | `/api/cache/export` | Export article cache JSON |
+| GET | `/api/mobiles/export` | Export mobile cache JSON |
+| DELETE | `/api/cache` | Clear caches |
+| POST | `/api/cron` | Start/stop/list cron jobs |
 
-## Query Parameters (GET /api/articles)
+### Trigger Scrape (Examples)
 
-| Param | Description | Example |
-|-------|-------------|---------|
-| `page` | Page number | `?page=2` |
-| `limit` | Per page count | `?limit=50` |
-| `category` | Filter by category | `?category=ক্রিকেট` |
-| `search` | Search in title/body | `?search=নেতানিয়াহু` |
-| `from` | From date (ISO) | `?from=2026-04-01` |
-| `to` | To date (ISO) | `?to=2026-04-30` |
-
-## Cron Job Management
+Run all sources:
 
 ```bash
-# Start a custom cron job (every 3 hours)
-curl -X POST http://localhost:3000/api/cron \
+curl -X POST http://localhost:9999/api/scrape \
   -H "Content-Type: application/json" \
-  -d '{"action":"start","schedule":"0 */3 * * *","name":"every-3h"}'
-
-# Stop a job
-curl -X POST http://localhost:3000/api/cron \
-  -H "Content-Type: application/json" \
-  -d '{"action":"stop","name":"hourly"}'
-
-# List active jobs
-curl -X POST http://localhost:3000/api/cron \
-  -H "Content-Type: application/json" \
-  -d '{"action":"list"}'
+  -d "{\"source\":\"all\"}"
 ```
 
-## File Structure
+Run a single source:
 
-```
-prothomalo-scraper/
-├── index.js          # Express server + cron jobs
-├── src/
-│   ├── scraper.js    # Scraping logic
-│   └── cache.js      # Cache read/write/meta
-├── cache/
-│   ├── articles.json # Cached articles
-│   └── meta.json     # Run history & stats
-└── public/
-    └── index.html    # Dashboard UI
+```bash
+curl -X POST http://localhost:9999/api/scrape \
+  -H "Content-Type: application/json" \
+  -d "{\"source\":\"gsmarena_bd\"}"
 ```
 
-## Default Cron Schedule
+## Cron Jobs (Examples)
 
-Default: `0 * * * *` (every hour on the hour)
+```bash
+curl -X POST http://localhost:9999/api/cron \
+  -H "Content-Type: application/json" \
+  -d "{\"action\":\"start\",\"schedule\":\"0 */3 * * *\",\"name\":\"every-3h\",\"source\":\"all\"}"
+```
 
-Change via the dashboard or API.
+## Project Structure
+
+```
+brox-scraper/
+├── index.js              # Express API + scrape orchestration + cron
+├── src/                  # Individual scrapers + cache helpers
+├── cache/                # Local JSON caches
+└── public/               # Dashboard UI
+```
+

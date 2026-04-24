@@ -1,7 +1,7 @@
 {
-  "name": "prothomalo-scraper",
+  "name": "brox-scraper",
   "version": "1.0.0",
-  "description": "Scraper for prothomalo.com latest articles with local cache and REST API",
+  "description": "Multi-source scraper with local cache, REST API, cron, and a web dashboard",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
@@ -16,9 +16,11 @@
   },
   "keywords": [
     "scraper",
-    "prothomalo",
     "news",
-    "api"
+    "mobiles",
+    "api",
+    "dashboard",
+    "cron"
   ],
   "author": "",
   "license": "ISC"

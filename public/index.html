@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>প্রথম আলো Scraper Dashboard</title>
+  <title>Brox Scraper Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Bengali:wght@400;600;700&family=JetBrains+Mono:wght@400;600&family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet" />
   <style>
@@ -438,7 +438,7 @@
 <body>
 
 <header>
-  <div class="logo">প্রথম আলো <span>Scraper</span></div>
+  <div class="logo">Brox <span>Scraper</span></div>
   <div class="header-status">
     <div class="pulse-dot idle" id="hdrDot"></div>
     <span id="hdrStatus">Idle</span>
@@ -691,7 +691,7 @@
 
       <div class="card">
         <div style="font-family:var(--mono); font-size:0.82rem; line-height:2">
-          <div style="margin-bottom:1rem; color:#888; font-size:0.78rem">Base URL: <strong style="color:var(--ink)">http://localhost:3000</strong></div>
+          <div style="margin-bottom:1rem; color:#888; font-size:0.78rem">Base URL: <strong style="color:var(--ink)">http://localhost:9999</strong></div>
 
           <div style="margin-bottom:1.25rem">
             <span class="tag green">GET</span> <strong>/api/status</strong><br/>
@@ -752,14 +752,14 @@
 
       <div class="card" style="background:var(--ink); border-color:#333; color:#a0ffa0; font-family:var(--mono); font-size:0.78rem; line-height:1.8">
         <div style="color:#666; margin-bottom:0.75rem"># Example curl commands</div>
-        <div style="margin-bottom:0.5rem"><span style="color:#60b0ff">curl</span> http://localhost:3000/api/status</div>
-        <div style="margin-bottom:0.5rem"><span style="color:#60b0ff">curl</span> -X POST http://localhost:3000/api/scrape -H "Content-Type: application/json" -d '{"source":"gsmarena_bd"}'</div>
-        <div style="margin-bottom:0.5rem"><span style="color:#60b0ff">curl</span> "http://localhost:3000/api/articles?page=1&limit=10&search=ক্রিকেট"</div>
-        <div style="margin-bottom:0.5rem"><span style="color:#60b0ff">curl</span> "http://localhost:3000/api/mobiles?page=1&limit=10&brand=Honor"</div>
-        <div style="margin-bottom:0.5rem"><span style="color:#60b0ff">curl</span> -X POST http://localhost:3000/api/cron \<br/>
+        <div style="margin-bottom:0.5rem"><span style="color:#60b0ff">curl</span> http://localhost:9999/api/status</div>
+        <div style="margin-bottom:0.5rem"><span style="color:#60b0ff">curl</span> -X POST http://localhost:9999/api/scrape -H "Content-Type: application/json" -d '{"source":"gsmarena_bd"}'</div>
+        <div style="margin-bottom:0.5rem"><span style="color:#60b0ff">curl</span> "http://localhost:9999/api/articles?page=1&limit=10&search=ক্রিকেট"</div>
+        <div style="margin-bottom:0.5rem"><span style="color:#60b0ff">curl</span> "http://localhost:9999/api/mobiles?page=1&limit=10&brand=Honor"</div>
+        <div style="margin-bottom:0.5rem"><span style="color:#60b0ff">curl</span> -X POST http://localhost:9999/api/cron \<br/>
         &nbsp;&nbsp;-H "Content-Type: application/json" \<br/>
         &nbsp;&nbsp;-d '{"action":"start","schedule":"0 */3 * * *","name":"every-3h"}'</div>
-        <div><span style="color:#60b0ff">curl</span> http://localhost:3000/api/cache/export -o articles.json</div>
+        <div><span style="color:#60b0ff">curl</span> http://localhost:9999/api/cache/export -o articles.json</div>
       </div>
     </div>
 
@@ -775,7 +775,7 @@
   let currentMobiles = [];
   let selectedMobileUrl = null;
   let mobilesPage = 1;
-  let selectedSource = '';
+  let selectedSource = 'all';
   let availableSources = [];
 
   // ── Navigation ──
@@ -861,7 +861,15 @@
     if (!box || !log?.length) return;
     box.innerHTML = log.slice(-100).map(e => {
       const cls = `stage-${e.stage || ''}`;
-      const url = e.url ? `<span style="color:#666"> ${e.url.replace('https://www.prothomalo.com', '')}</span>` : '';
+      const url = (() => {
+        if (!e.url) return '';
+        try {
+          const u = new URL(e.url);
+          return `<span style="color:#666"> ${escapeHtml(u.pathname + u.search)}</span>`;
+        } catch {
+          return `<span style="color:#666"> ${escapeHtml(String(e.url))}</span>`;
+        }
+      })();
       return `<div class="log-entry"><span class="ts">[${e.time?.slice(11,19) || '--'}]</span> <span class="${cls}">${e.message || ''}</span>${url}</div>`;
     }).join('');
     box.scrollTop = box.scrollHeight;
@@ -1166,7 +1174,6 @@
   async function loadSources() {
     const data = await api('/api/status');
     availableSources = data.sources || [];
-    const def = (data.defaultSource || 'prothomalo').toString();
 
     const sel = document.getElementById('sourceSelect');
     if (!sel) return;
@@ -1175,11 +1182,16 @@
       try { return localStorage.getItem('scrapeSource') || ''; } catch { return ''; }
     })();
 
-    selectedSource = saved || def || 'prothomalo';
+    const options = ['all', ...(availableSources.length ? availableSources : ['prothomalo'])];
+    selectedSource = saved || 'all';
+    if (!options.includes(selectedSource)) selectedSource = 'all';
 
-    sel.innerHTML = availableSources.length
-      ? availableSources.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('')
-      : `<option value="prothomalo">prothomalo</option>`;
+    sel.innerHTML = options
+      .map(s => {
+        const label = s === 'all' ? 'All' : s;
+        return `<option value="${escapeHtml(s)}">${escapeHtml(label)}</option>`;
+      })
+      .join('');
 
     sel.value = selectedSource;
   }

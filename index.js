@@ -16,7 +16,7 @@ const {
 const { getScraper, listSources } = require('./src/scrapers');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 9999;
 const DEFAULT_CRON_SCHEDULE = process.env.SCRAPER_CRON_SCHEDULE || '0 * * * *';
 
 app.use(cors());
@@ -79,7 +79,7 @@ async function pushArticlesToEndpoint(articles, options = {}) {
   }
 
   const payload = {
-    source: 'prothomalo',
+    source: options.sourceKey || 'brox',
     trigger: options.trigger || 'manual',
     pushedAt: new Date().toISOString(),
     count: articles.length,
@@ -115,8 +115,13 @@ async function executeScrape(trigger = 'manual', options = {}) {
     return { error: 'Scraper is already running', status: scrapeStatus };
   }
 
-  const sourceKey = (options.source || process.env.SCRAPER_SOURCE || 'prothomalo').toString().trim().toLowerCase();
-  const scraper = getScraper(sourceKey);
+  const sourceKey = (options.source || process.env.SCRAPER_SOURCE || 'prothomalo')
+    .toString()
+    .trim()
+    .toLowerCase();
+
+  const runAllSources = sourceKey === 'all' || sourceKey === '*';
+  const sourcesToRun = runAllSources ? listSources() : [sourceKey];
 
   scrapeStatus = {
     running: true,
@@ -126,45 +131,114 @@ async function executeScrape(trigger = 'manual', options = {}) {
     lastResult: null,
   };
 
-  console.log(`[Scraper] Starting (source: ${sourceKey}, trigger: ${trigger})`);
+  console.log(
+    `[Scraper] Starting (source: ${runAllSources ? 'all' : sourceKey}, trigger: ${trigger})`
+  );
 
   try {
-    const result = await scraper.runScraper(progress => {
-      const entry = { ...progress, time: new Date().toISOString() };
-      scrapeStatus.log.push(entry);
-      console.log(`[Scraper] ${progress.stage}: ${progress.message}`);
-    });
+    const perSource = {};
+    const combinedErrors = [];
+    const pushItems = [];
 
-    const allItems = result.articles || [];
-    const mobiles = allItems.filter(item => item?.contentType === 'mobile');
-    const articles = allItems.filter(item => item?.contentType !== 'mobile');
+    let combinedTotal = 0;
+    let combinedSuccess = 0;
+    let combinedFailed = 0;
 
-    const cacheResult = saveToCache(articles);
-    const mobileCacheResult = saveMobilesToCache(mobiles);
+    let combinedAddedToCache = 0;
+    let combinedUpdatedInCache = 0;
+    let combinedAddedMobilesToCache = 0;
+    let combinedUpdatedMobilesInCache = 0;
 
-    const pushItems = [
-      ...(cacheResult.newArticles || []),
-      ...(mobileCacheResult.newItems || []),
-    ];
+    for (const runKey of sourcesToRun) {
+      const scraper = getScraper(runKey);
+
+      scrapeStatus.log.push({
+        time: new Date().toISOString(),
+        stage: 'source',
+        message: `Starting source: ${runKey}`,
+        sourceKey: runKey,
+      });
+
+      try {
+        const result = await scraper.runScraper(progress => {
+          const entry = {
+            ...progress,
+            time: new Date().toISOString(),
+            sourceKey: runKey,
+            stage: progress.stage,
+            message: `[${runKey}] ${progress.message}`,
+          };
+          scrapeStatus.log.push(entry);
+          console.log(`[Scraper] ${runKey}:${progress.stage}: ${progress.message}`);
+        });
+
+        perSource[runKey] = result;
+        combinedTotal += Number(result.total || 0);
+        combinedSuccess += Number(result.success || 0);
+        combinedFailed += Number(result.failed || 0);
+        if (Array.isArray(result.errors) && result.errors.length) {
+          combinedErrors.push(...result.errors.map(err => ({ ...err, sourceKey: runKey })));
+        }
+
+        const allItems = result.articles || [];
+        const mobiles = allItems.filter(item => item?.contentType === 'mobile');
+        const articles = allItems.filter(item => item?.contentType !== 'mobile');
+
+        const cacheResult = saveToCache(articles);
+        const mobileCacheResult = saveMobilesToCache(mobiles);
+
+        combinedAddedToCache += Number(cacheResult.added || 0);
+        combinedUpdatedInCache += Number(cacheResult.updated || 0);
+        combinedAddedMobilesToCache += Number(mobileCacheResult.added || 0);
+        combinedUpdatedMobilesInCache += Number(mobileCacheResult.updated || 0);
+
+        pushItems.push(
+          ...(cacheResult.newArticles || []),
+          ...(mobileCacheResult.newItems || [])
+        );
+      } catch (err) {
+        const errorEntry = {
+          error: err.message,
+          sourceKey: runKey,
+        };
+        perSource[runKey] = errorEntry;
+        combinedErrors.push(errorEntry);
+
+        scrapeStatus.log.push({
+          time: new Date().toISOString(),
+          stage: 'error',
+          message: `Source failed: ${runKey} (${err.message})`,
+          sourceKey: runKey,
+        });
+      }
+    }
 
     const pushResult = await pushArticlesToEndpoint(pushItems, {
       trigger,
       pushUrl: options.pushUrl,
       pushHeaders: options.pushHeaders,
+      sourceKey: runAllSources ? 'all' : sourceKey,
     });
 
+    const stats = getStats();
+
     const finalResult = {
-      ...result,
-      addedToCache: cacheResult.added,
-      updatedInCache: cacheResult.updated || 0,
-      cacheTotal: cacheResult.total,
-      addedMobilesToCache: mobileCacheResult.added,
-      updatedMobilesInCache: mobileCacheResult.updated || 0,
-      mobileCacheTotal: mobileCacheResult.total,
+      total: combinedTotal,
+      success: combinedSuccess,
+      failed: combinedFailed,
+      errors: combinedErrors,
+      perSource,
+      addedToCache: combinedAddedToCache,
+      updatedInCache: combinedUpdatedInCache,
+      cacheTotal: stats.totalCached,
+      addedMobilesToCache: combinedAddedMobilesToCache,
+      updatedMobilesInCache: combinedUpdatedMobilesInCache,
+      mobileCacheTotal: stats.totalMobilesCached,
       pushedArticles: pushResult.count,
       pushResult,
       trigger,
-      sourceKey,
+      sourceKey: runAllSources ? 'all' : sourceKey,
+      sourcesRun: sourcesToRun,
     };
 
     updateMeta(finalResult);
@@ -172,7 +246,7 @@ async function executeScrape(trigger = 'manual', options = {}) {
     scrapeStatus.running = false;
 
     console.log(
-      `[Scraper] Done - ${result.success}/${result.total} items, +${cacheResult.added} articles, +${mobileCacheResult.added} mobiles, push attempted: ${pushResult.attempted}`
+      `[Scraper] Done - ${finalResult.success}/${finalResult.total} items, +${finalResult.addedToCache} articles, +${finalResult.addedMobilesToCache} mobiles, push attempted: ${pushResult.attempted}`
     );
 
     return finalResult;
@@ -375,7 +449,7 @@ app.get('/api/stats', (req, res) => {
 
 app.get('/api/cache/export', (req, res) => {
   const articles = readCache();
-  res.setHeader('Content-Disposition', `attachment; filename="prothomalo-cache-${Date.now()}.json"`);
+  res.setHeader('Content-Disposition', `attachment; filename="brox-cache-${Date.now()}.json"`);
   res.setHeader('Content-Type', 'application/json');
   res.json(articles);
 });
@@ -425,7 +499,7 @@ app.get('/api/scrape/log', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Prothom Alo Scraper API running at http://localhost:${PORT}`);
+  console.log(`Brox Scraper API running at http://localhost:${PORT}`);
   console.log(`Dashboard: http://localhost:${PORT}/`);
   console.log(`API docs: http://localhost:${PORT}/api/status`);
 });
