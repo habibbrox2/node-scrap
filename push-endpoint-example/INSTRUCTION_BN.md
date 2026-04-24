@@ -1,6 +1,8 @@
 # `push-endpoint-example/index.php` তৈরির নির্দেশনা (বাংলা)
 
-এই ফাইলটি Brox Scraper থেকে আসা push payload (articles/mobiles) রিসিভ করার জন্য একটি simple PHP endpoint।
+এই ফাইলটি Brox Scraper থেকে আসা push payload (articles/mobiles) রিসিভ করার জন্য একটি PHP endpoint।
+
+এই version-এ `mysqli` support দেওয়া আছে, তাই shared hosting/cPanel পরিবেশে MySQL database এ log রাখতে পারবেন।
 
 ---
 
@@ -21,8 +23,9 @@
 1. শুধু `POST` request গ্রহণ করবে  
 2. JSON payload parse করবে  
 3. payload-এ `articles` নাকি `mobiles` এসেছে বুঝবে  
-4. প্রতিটি request log file-এ append করবে  
-5. JSON response দেবে (`ok: true/false`)
+4. `mysqli` configured থাকলে database table (`push_logs`) এ log save করবে  
+5. database unavailable হলে `logs/push-received.jsonl` এ fallback log লিখবে  
+6. JSON response দেবে (`ok: true/false`)
 
 ---
 
@@ -37,17 +40,34 @@
 
 ---
 
-## 4) Log file path
+## 4) mysqli / MySQL সেটআপ (প্রয়োজনীয়)
+
+`index.php` এর শুরুতে:
+
+- `$useMysqli = true;`
+- `$dbHost`, `$dbUser`, `$dbPass`, `$dbName`, `$dbPort` আপনার hosting database অনুযায়ী দিন
+
+### cPanel/phpMyAdmin এ table তৈরি
+
+Option A (recommended):
+- `push-endpoint-example/push_logs.sql` import করুন
+
+Option B:
+- endpoint প্রথমবার hit হলে `push_logs` table auto create করার চেষ্টা করবে
+
+---
+
+## 5) Log file path (fallback)
 
 `index.php` এ log path:
 
 - `push-endpoint-example/logs/push-received.jsonl`
 
-এখানে JSON line format-এ request জমা হবে।
+MySQL কাজ না করলে এখানে JSON line format-এ request জমা হবে।
 
 ---
 
-## 5) Brox Scraper Dashboard-এ কী সেট করবেন
+## 6) Brox Scraper Dashboard-এ কী সেট করবেন
 
 `Settings` পেজে:
 
@@ -66,11 +86,12 @@
 
 ---
 
-## 6) Test করার উপায়
+## 7) Test করার উপায়
 
 ### A) Browser/Server check
 
-- `logs/push-received.jsonl` ফাইলে নতুন line আসছে কি না দেখুন।
+- MySQL table `push_logs` এ নতুন row আসছে কি না দেখুন।
+- fallback হলে `logs/push-received.jsonl` ফাইলে line আসবে।
 
 ### B) Scraper side check
 
@@ -79,7 +100,7 @@
 
 ---
 
-## 7) Common error
+## 8) Common error
 
 - `Method not allowed` → GET দিয়ে hit করছেন, POST দিন  
 - `Invalid JSON payload` → request body JSON না  
@@ -88,10 +109,9 @@
 
 ---
 
-## 8) Security tips
+## 9) Security tips
 
 - Production এ `$requireAuth = true` রাখুন  
 - শক্তিশালী token ব্যবহার করুন  
 - HTTPS ছাড়া endpoint expose করবেন না  
 - Log file permissions সীমিত রাখুন
-

@@ -75,6 +75,17 @@ pm2 startup
 - `$requireAuth = true;`
 - `$authToken = 'YOUR_SECRET_TOKEN';`
 
+### Step 3: MySQL (mysqli) config (shared hosting এর জন্য recommended)
+
+`index.php` এ:
+- `$useMysqli = true;`
+- `$dbHost`, `$dbUser`, `$dbPass`, `$dbName`, `$dbPort` ঠিক করুন
+
+তারপর phpMyAdmin থেকে:
+- `push-endpoint-example/push_logs.sql` import করুন
+
+> import না করলেও endpoint নিজে table create করার চেষ্টা করবে।
+
 ---
 
 ## 4) Scraper app থেকে push enable করা
@@ -142,4 +153,3 @@ Push success/fail status Push Logs-এ দেখা যাবে।
 ```bash
 pm2 restart brox-scraper
 ```
-
