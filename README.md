@@ -35,6 +35,8 @@ Open `http://localhost:9999/`.
 - `PUSH_ENDPOINT_HEADERS_JSON` — extra headers as JSON, e.g. `{"Authorization":"Bearer ..."}`
 - `PUSH_ENDPOINT_TIMEOUT_MS` (default: `30000`)
 
+You can also configure the push endpoint from the dashboard (API Settings) or via `POST /api/settings`.
+
 ## API
 
 ### Core Endpoints
@@ -51,6 +53,8 @@ Open `http://localhost:9999/`.
 | GET | `/api/cache/export` | Export article cache JSON |
 | GET | `/api/mobiles/export` | Export mobile cache JSON |
 | DELETE | `/api/cache` | Clear caches |
+| GET | `/api/settings` | Get API settings (push endpoint + headers) |
+| POST | `/api/settings` | Update API settings (push endpoint + headers) |
 | POST | `/api/cron` | Start/stop/list cron jobs |
 
 ### Trigger Scrape (Examples)
@@ -71,6 +75,20 @@ curl -X POST http://localhost:9999/api/scrape \
   -d "{\"source\":\"gsmarena_bd\"}"
 ```
 
+## Push Delivery (POST)
+
+When a push endpoint is configured, newly-added items are POSTed after a scrape run with payload:
+
+```json
+{
+  "source": "all",
+  "trigger": "manual",
+  "pushedAt": "2026-04-25T00:00:00.000Z",
+  "count": 10,
+  "articles": []
+}
+```
+
 ## Cron Jobs (Examples)
 
 ```bash
@@ -78,6 +96,12 @@ curl -X POST http://localhost:9999/api/cron \
   -H "Content-Type: application/json" \
   -d "{\"action\":\"start\",\"schedule\":\"0 */3 * * *\",\"name\":\"every-3h\",\"source\":\"all\"}"
 ```
+
+## Database
+
+After each scrape run, scraped items are also stored in a local SQLite DB file:
+
+- `cache/brox.sqlite` (tables: `content_items`, `scrape_runs`)
 
 ## Project Structure
 
@@ -88,4 +112,3 @@ brox-scraper/
 ├── cache/                # Local JSON caches
 └── public/               # Dashboard UI
 ```
-

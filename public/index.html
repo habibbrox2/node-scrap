@@ -747,6 +747,43 @@
             <span class="tag green">GET</span> <strong>/api/scrape/log</strong><br/>
             <span style="color:#888; font-size:0.78rem">Get live scrape log entries</span>
           </div>
+
+          <div style="margin-top:1.25rem; padding-top:1.25rem; border-top:1px solid #eee">
+            <div style="font-weight:700; color:#333; margin-bottom:0.6rem">Settings + Delivery</div>
+            <div style="margin-bottom:1.1rem">
+              <span class="tag green">GET</span> <strong>/api/settings</strong><br/>
+              <span style="color:#888; font-size:0.78rem">Read API settings (push endpoint + headers)</span>
+            </div>
+            <div style="margin-bottom:1.1rem">
+              <span class="tag red">POST</span> <strong>/api/settings</strong><br/>
+              <span style="color:#888; font-size:0.78rem">Update API settings (pushEndpointUrl, pushEndpointHeadersJson)</span>
+            </div>
+            <div>
+              <span style="color:#888; font-size:0.78rem">After each scrape run (manual/cron), items are saved to JSON cache and also stored in a local SQLite DB. If a push endpoint is configured, newly added items are POSTed to it as: { source, trigger, pushedAt, count, articles: [...] }.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem">
+          <div style="font-weight:700">API Settings</div>
+          <span id="apiSettingsStatus" class="tag">Not saved</span>
+        </div>
+
+        <div style="display:flex; gap:0.75rem; flex-wrap:wrap">
+          <div style="flex:1; min-width:260px">
+            <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">PUSH ENDPOINT URL</div>
+            <input class="input" id="pushEndpointUrl" placeholder="https://broxlab.online/api/autocontent" />
+            <div style="font-size:0.74rem; color:#888; margin-top:0.4rem">Set empty to disable automatic POST.</div>
+          </div>
+          <div style="flex:1; min-width:260px">
+            <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">PUSH HEADERS (JSON)</div>
+            <textarea class="input" id="pushEndpointHeadersJson" rows="3" placeholder='{\"Authorization\":\"Bearer ...\"}' style="width:100%; resize:vertical"></textarea>
+          </div>
+          <div style="align-self:flex-end">
+            <button class="btn btn-primary" onclick="saveApiSettings()">Save Settings</button>
+          </div>
         </div>
       </div>
 
@@ -754,6 +791,7 @@
         <div style="color:#666; margin-bottom:0.75rem"># Example curl commands</div>
         <div style="margin-bottom:0.5rem"><span style="color:#60b0ff">curl</span> http://localhost:9999/api/status</div>
         <div style="margin-bottom:0.5rem"><span style="color:#60b0ff">curl</span> -X POST http://localhost:9999/api/scrape -H "Content-Type: application/json" -d '{"source":"gsmarena_bd"}'</div>
+        <div style="margin-bottom:0.5rem"><span style="color:#60b0ff">curl</span> -X POST http://localhost:9999/api/settings -H "Content-Type: application/json" -d '{\"pushEndpointUrl\":\"https://broxlab.online/api/autocontent\",\"pushEndpointHeadersJson\":\"{\\\\\\\"Authorization\\\\\\\":\\\\\\\"Bearer ...\\\\\\\"}\"}'</div>
         <div style="margin-bottom:0.5rem"><span style="color:#60b0ff">curl</span> "http://localhost:9999/api/articles?page=1&limit=10&search=ক্রিকেট"</div>
         <div style="margin-bottom:0.5rem"><span style="color:#60b0ff">curl</span> "http://localhost:9999/api/mobiles?page=1&limit=10&brand=Honor"</div>
         <div style="margin-bottom:0.5rem"><span style="color:#60b0ff">curl</span> -X POST http://localhost:9999/api/cron \<br/>
@@ -789,12 +827,66 @@
     if (name === 'mobiles') loadMobiles();
     if (name === 'cron') loadCronJobs();
     if (name === 'dashboard') loadDashboard();
+    if (name === 'api') loadApiSettings();
   }
 
   // ── API helpers ──
   async function api(path, opts = {}) {
     const r = await fetch(path, opts);
     return r.json();
+  }
+
+  // ── API settings ──
+  async function loadApiSettings() {
+    const badge = document.getElementById('apiSettingsStatus');
+    try {
+      const data = await api('/api/settings');
+      const urlInput = document.getElementById('pushEndpointUrl');
+      const headersInput = document.getElementById('pushEndpointHeadersJson');
+      if (urlInput) urlInput.value = data.pushEndpointUrl || '';
+      if (headersInput) headersInput.value = JSON.stringify(data.pushEndpointHeaders || {}, null, 2);
+
+      if (badge) {
+        badge.textContent = (data.pushEndpointUrl || '').trim() ? 'Loaded' : 'Disabled';
+        badge.className = 'tag ' + ((data.pushEndpointUrl || '').trim() ? 'green' : '');
+      }
+    } catch (e) {
+      if (badge) {
+        badge.textContent = 'Offline';
+        badge.className = 'tag red';
+      }
+    }
+  }
+
+  async function saveApiSettings() {
+    const badge = document.getElementById('apiSettingsStatus');
+    const urlInput = document.getElementById('pushEndpointUrl');
+    const headersInput = document.getElementById('pushEndpointHeadersJson');
+    const pushEndpointUrl = (urlInput?.value || '').trim();
+    const rawHeadersJson = (headersInput?.value || '').trim();
+
+    if (rawHeadersJson) {
+      try { JSON.parse(rawHeadersJson); } catch { return alert('Invalid headers JSON'); }
+    }
+
+    if (badge) {
+      badge.textContent = 'Saving...';
+      badge.className = 'tag';
+    }
+
+    const result = await api('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        pushEndpointUrl,
+        pushEndpointHeadersJson: rawHeadersJson || '{}',
+      }),
+    });
+
+    if (badge) {
+      badge.textContent = (result.pushEndpointUrl || '').trim() ? 'Saved' : 'Disabled';
+      badge.className = 'tag ' + ((result.pushEndpointUrl || '').trim() ? 'green' : '');
+    }
   }
 
   // ── Status poll ──
@@ -1257,6 +1349,7 @@
   // ── Init ──
   loadDashboard();
   loadSources();
+  loadApiSettings();
   pollStatus();
   statusPollInterval = setInterval(pollStatus, 3000);
 </script>

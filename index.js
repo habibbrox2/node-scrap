@@ -14,6 +14,8 @@ const {
   getStats,
 } = require('./src/cache');
 const { getScraper, listSources } = require('./src/scrapers');
+const { readSettings, updateSettings } = require('./src/settings');
+const { upsertContentItems, insertScrapeRun, DB_FILE } = require('./src/db');
 
 const app = express();
 const PORT = process.env.PORT || 9999;
@@ -42,9 +44,11 @@ function parseJsonEnv(value, fallback = {}) {
 }
 
 function getPushConfig(overrides = {}) {
-  const endpointUrl = overrides.pushUrl || process.env.PUSH_ENDPOINT_URL || '';
+  const settings = readSettings();
+  const endpointUrl = overrides.pushUrl || settings.pushEndpointUrl || process.env.PUSH_ENDPOINT_URL || '';
   const headers = {
     ...parseJsonEnv(process.env.PUSH_ENDPOINT_HEADERS_JSON, {}),
+    ...(settings.pushEndpointHeaders || {}),
     ...(overrides.pushHeaders || {}),
   };
 
@@ -241,6 +245,25 @@ async function executeScrape(trigger = 'manual', options = {}) {
       sourcesRun: sourcesToRun,
     };
 
+    // Store to DB (best-effort; doesn't block the scrape result if it fails).
+    try {
+      const toStore = [];
+      Object.entries(perSource).forEach(([k, r]) => {
+        if (r && Array.isArray(r.articles) && r.articles.length) {
+          toStore.push(...r.articles.map(item => ({ ...item, sourceKey: k })));
+        }
+      });
+
+      upsertContentItems(toStore, { sourceKey: finalResult.sourceKey, trigger });
+      insertScrapeRun(finalResult);
+    } catch (dbErr) {
+      scrapeStatus.log.push({
+        time: new Date().toISOString(),
+        stage: 'db',
+        message: `DB store failed: ${dbErr.message}`,
+      });
+    }
+
     updateMeta(finalResult);
     scrapeStatus.lastResult = finalResult;
     scrapeStatus.running = false;
@@ -297,6 +320,7 @@ startCronJob(DEFAULT_CRON_SCHEDULE, 'hourly');
 
 app.get('/api/status', (req, res) => {
   const stats = getStats();
+  const settings = readSettings();
   res.json({
     scraper: scrapeStatus,
     cache: stats,
@@ -304,9 +328,32 @@ app.get('/api/status', (req, res) => {
       Object.entries(cronJobs).map(([name, job]) => [name, { schedule: job.schedule }])
     ),
     push: getPushConfig(),
+    settings,
+    database: { type: 'sqlite', file: DB_FILE },
     sources: listSources(),
     defaultSource: (process.env.SCRAPER_SOURCE || 'prothomalo').toString(),
   });
+});
+
+app.get('/api/settings', (req, res) => {
+  res.json(readSettings());
+});
+
+app.post('/api/settings', (req, res) => {
+  const { pushEndpointUrl, pushEndpointHeaders, pushEndpointHeadersJson } = req.body || {};
+
+  let headers = pushEndpointHeaders;
+  if (!headers && typeof pushEndpointHeadersJson === 'string') {
+    headers = parseJsonEnv(pushEndpointHeadersJson, {});
+  }
+  if (!headers || typeof headers !== 'object') headers = {};
+
+  const updated = updateSettings({
+    ...(pushEndpointUrl !== undefined ? { pushEndpointUrl } : {}),
+    ...(headers !== undefined ? { pushEndpointHeaders: headers } : {}),
+  });
+
+  res.json(updated);
 });
 
 app.post('/api/scrape', async (req, res) => {
@@ -315,12 +362,14 @@ app.post('/api/scrape', async (req, res) => {
   }
 
   const { pushUrl, pushHeaders, source } = req.body || {};
+  const pushConfig = getPushConfig({ pushUrl, pushHeaders });
 
   res.json({
     message: 'Scrape started',
     trigger: 'manual',
     startedAt: new Date().toISOString(),
-    pushEnabled: Boolean(pushUrl || process.env.PUSH_ENDPOINT_URL),
+    pushEnabled: pushConfig.enabled,
+    pushUrl: pushConfig.url || null,
     source: source || process.env.SCRAPER_SOURCE || 'prothomalo',
   });
 
