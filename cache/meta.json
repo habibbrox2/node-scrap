@@ -1,8 +1,104 @@
 {
-  "lastRun": "2026-04-24T17:36:17.063Z",
-  "totalRuns": 14,
-  "totalArticles": 25,
+  "lastRun": "2026-04-24T19:10:38.569Z",
+  "totalRuns": 21,
+  "totalArticles": 49,
   "runs": [
+    {
+      "runAt": "2026-04-24T19:10:38.569Z",
+      "scraped": 10,
+      "success": 10,
+      "errors": 0,
+      "addedToCache": 10,
+      "trigger": "manual",
+      "pushed": true,
+      "pushSuccess": true,
+      "pushedCount": 10,
+      "pushedArticles": 10,
+      "pushedMobiles": 0,
+      "pushUrl": "https://broxlab.online/api/autocontent"
+    },
+    {
+      "runAt": "2026-04-24T19:09:53.110Z",
+      "scraped": 0,
+      "success": 0,
+      "errors": 0,
+      "addedToCache": 0,
+      "trigger": "manual",
+      "pushed": true,
+      "pushSuccess": true,
+      "pushedCount": 0,
+      "pushedArticles": 0,
+      "pushedMobiles": 0,
+      "pushUrl": "https://broxlab.online/api/autocontent"
+    },
+    {
+      "runAt": "2026-04-24T19:09:41.488Z",
+      "scraped": 0,
+      "success": 0,
+      "errors": 0,
+      "addedToCache": 0,
+      "trigger": "manual",
+      "pushed": true,
+      "pushSuccess": true,
+      "pushedCount": 0,
+      "pushedArticles": 0,
+      "pushedMobiles": 0,
+      "pushUrl": "https://broxlab.online/api/autocontent"
+    },
+    {
+      "runAt": "2026-04-24T19:06:50.132Z",
+      "scraped": 0,
+      "success": 0,
+      "errors": 0,
+      "addedToCache": 0,
+      "trigger": "manual",
+      "pushed": true,
+      "pushSuccess": true,
+      "pushedCount": 0,
+      "pushedArticles": 0,
+      "pushedMobiles": 0,
+      "pushUrl": "https://broxlab.online/api/autocontent"
+    },
+    {
+      "runAt": "2026-04-24T19:06:09.114Z",
+      "scraped": 8,
+      "success": 7,
+      "errors": 1,
+      "addedToCache": 7,
+      "trigger": "manual",
+      "pushed": true,
+      "pushSuccess": true,
+      "pushedCount": 7,
+      "pushedArticles": 7,
+      "pushedMobiles": 0,
+      "pushUrl": "https://broxlab.online/api/autocontent"
+    },
+    {
+      "runAt": "2026-04-24T19:00:22.888Z",
+      "scraped": 10,
+      "success": 10,
+      "errors": 0,
+      "addedToCache": 7,
+      "trigger": "cron:hourly",
+      "pushed": true,
+      "pushSuccess": true,
+      "pushedCount": 7,
+      "pushedArticles": 7,
+      "pushedMobiles": 0,
+      "pushUrl": "https://broxlab.online/api/autocontent"
+    },
+    {
+      "runAt": "2026-04-24T18:57:11.199Z",
+      "scraped": 19,
+      "success": 19,
+      "errors": 0,
+      "addedToCache": 0,
+      "trigger": "manual",
+      "pushed": false,
+      "pushSuccess": false,
+      "pushedCount": 0,
+      "pushUrl": null
+    },
     {
       "runAt": "2026-04-24T17:36:17.063Z",
       "scraped": 19,
@@ -143,5 +239,6 @@
       "addedToCache": 0,
       "trigger": "manual"
     }
-  ]
+  ],
+  "totalMobiles": 3
 }

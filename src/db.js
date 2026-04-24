@@ -119,6 +119,9 @@ function insertScrapeRun(runResult) {
 
   const runAt = new Date().toISOString();
   const pushResult = runResult && runResult.pushResult ? runResult.pushResult : {};
+  const pushArticles = pushResult.articles || {};
+  const pushMobiles = pushResult.mobiles || {};
+  const pushUrl = pushResult.url || pushArticles.url || pushMobiles.url || null;
   stmt.run(
     runAt,
     runResult && runResult.trigger ? String(runResult.trigger) : null,
@@ -129,7 +132,7 @@ function insertScrapeRun(runResult) {
     pushResult.attempted ? 1 : 0,
     pushResult.success ? 1 : 0,
     pushResult.count != null ? Number(pushResult.count) : 0,
-    pushResult.url || null,
+    pushUrl,
     JSON.stringify(runResult || {})
   );
 }

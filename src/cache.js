@@ -277,6 +277,12 @@ function updateMeta(runResult) {
   ensureCacheDir();
   const meta = readMeta();
 
+  const pushResult = runResult.pushResult || {};
+  const pushArticles = pushResult.articles || {};
+  const pushMobiles = pushResult.mobiles || {};
+  const legacyPushUrl = pushResult.url || null;
+  const pushUrl = legacyPushUrl || pushArticles.url || pushMobiles.url || null;
+
   const runEntry = {
     runAt: new Date().toISOString(),
     scraped: runResult.total,
@@ -284,10 +290,12 @@ function updateMeta(runResult) {
     errors: runResult.errors?.length || 0,
     addedToCache: runResult.addedToCache || 0,
     trigger: runResult.trigger || 'manual',
-    pushed: runResult.pushResult?.attempted || false,
-    pushSuccess: runResult.pushResult?.success || false,
-    pushedCount: runResult.pushResult?.count || 0,
-    pushUrl: runResult.pushResult?.url || null,
+    pushed: pushResult.attempted || false,
+    pushSuccess: pushResult.success || false,
+    pushedCount: pushResult.count || 0,
+    pushedArticles: Number(pushArticles.count || 0),
+    pushedMobiles: Number(pushMobiles.count || 0),
+    pushUrl,
   };
 
   meta.lastRun = runEntry.runAt;

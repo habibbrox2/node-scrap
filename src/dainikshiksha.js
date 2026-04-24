@@ -5,6 +5,11 @@ const BASE_URL = 'https://www.dainikshiksha.com';
 const LISTING_URL = `${BASE_URL}/bn/page/latest-news`;
 const ARCHIVE_DIR_URL = `${BASE_URL}/data/bn/archive/`;
 const LISTING_LIMIT = parseInt(process.env.SCRAPER_LISTING_LIMIT || '20', 10);
+const ARCHIVE_LOOKBACK_DAYS = parseInt(process.env.SCRAPER_DAINIKSHIKSHA_ARCHIVE_LOOKBACK_DAYS || '7', 10);
+const LISTING_SOURCE_FILTER = (process.env.SCRAPER_DAINIKSHIKSHA_LISTING_SOURCE || '')
+  .split(',')
+  .map(value => cleanText(value).toLowerCase())
+  .filter(Boolean);
 
 const FETCH_HEADERS = {
   Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -42,6 +47,7 @@ function normalizeUrl(rawUrl) {
     const resolved = new URL(rawUrl, BASE_URL);
     if (resolved.origin !== BASE_URL) return null;
     resolved.hash = '';
+    resolved.search = '';
     return resolved.toString();
   } catch {
     return null;
@@ -75,6 +81,53 @@ function parseDateToIso(value) {
   return parsed.toISOString();
 }
 
+function extractLinksFromArchivePayload(payload) {
+  const links = [];
+
+  function walk(node) {
+    if (!node) return;
+
+    if (Array.isArray(node)) {
+      node.forEach(walk);
+      return;
+    }
+
+    if (typeof node !== 'object') return;
+
+    const maybeUrl = normalizeUrl(
+      node.url ||
+      node.news_url ||
+      node.details_url ||
+      node.link ||
+      node.href
+    );
+
+    if (maybeUrl && maybeUrl.includes('/bn/news/')) {
+      const itemSource = cleanText(node.source || node.portal || node.site || '').toLowerCase();
+      if (LISTING_SOURCE_FILTER.length && !LISTING_SOURCE_FILTER.includes(itemSource)) {
+        // Skip if source filter is configured and current item source does not match.
+      } else {
+        links.push(maybeUrl);
+      }
+    }
+
+    Object.values(node).forEach(walk);
+  }
+
+  walk(payload);
+  return [...new Set(links)];
+}
+
+function formatDateYmd(dateObj) {
+  return dateObj.toLocaleString('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' }).slice(0, 10);
+}
+
+async function fetchArchiveLinksByDate(date) {
+  const archiveUrl = `${ARCHIVE_DIR_URL}${date}.json?_t=${Math.floor(Date.now() / 10000)}`;
+  const payload = await fetchJson(archiveUrl);
+  return extractLinksFromArchivePayload(payload);
+}
+
 function extractListingLinks(root) {
   const links = [];
   const seen = new Set();
@@ -100,28 +153,62 @@ function extractListingLinks(root) {
     });
   }
 
+  // Fallback: links embedded in scripts/JSON
+  if (links.length === 0) {
+    root.querySelectorAll('script').forEach(script => {
+      const text = script.text || '';
+      if (!text) return;
+      const matches = text.match(/https?:\/\/www\.dainikshiksha\.com\/bn\/news\/[^"'\\\s<]+/g) || [];
+      matches.forEach(match => {
+        const normalized = normalizeUrl(match);
+        if (!normalized) return;
+        if (seen.has(normalized)) return;
+        seen.add(normalized);
+        links.push(normalized);
+      });
+    });
+  }
+
   return links.slice(0, LISTING_LIMIT);
 }
 
 async function scrapeArticleLinks() {
   const overrideDate = cleanText(process.env.SCRAPER_DAINIKSHIKSHA_DATE || process.env.SCRAPER_ARCHIVE_DATE);
-  const date =
-    overrideDate ||
-    new Date().toLocaleString('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' }).slice(0, 10);
+  const collected = new Set();
 
-  const archiveUrl = `${ARCHIVE_DIR_URL}${date}.json?_t=${Math.floor(Date.now() / 10000)}`;
+  if (overrideDate) {
+    try {
+      const links = await fetchArchiveLinksByDate(overrideDate);
+      links.forEach(link => collected.add(link));
+    } catch {
+      // Keep fallback path below.
+    }
+  } else {
+    const lookbackDays = Number.isFinite(ARCHIVE_LOOKBACK_DAYS) && ARCHIVE_LOOKBACK_DAYS >= 0
+      ? ARCHIVE_LOOKBACK_DAYS
+      : 7;
 
-  try {
-    const payload = await fetchJson(archiveUrl);
-    const links = (payload.news || [])
-      .map(item => normalizeUrl(item.url))
-      .filter(Boolean);
-    return [...new Set(links)].slice(0, LISTING_LIMIT);
-  } catch {
-    // Fallback to HTML parsing (may be template shell for bots, but try anyway).
-    const root = await fetchPage(LISTING_URL);
-    return extractListingLinks(root);
+    for (let dayOffset = 0; dayOffset <= lookbackDays && collected.size < LISTING_LIMIT; dayOffset += 1) {
+      const dateObj = new Date();
+      dateObj.setDate(dateObj.getDate() - dayOffset);
+      const date = formatDateYmd(dateObj);
+
+      try {
+        const links = await fetchArchiveLinksByDate(date);
+        links.forEach(link => collected.add(link));
+      } catch {
+        // Ignore missing dates (404) and continue to previous day.
+      }
+    }
   }
+
+  if (collected.size > 0) {
+    return [...collected].slice(0, LISTING_LIMIT);
+  }
+
+  // Fallback to HTML parsing (may be template shell for bots, but try anyway).
+  const root = await fetchPage(LISTING_URL);
+  return extractListingLinks(root);
 }
 
 function extractParagraphs(root) {

@@ -105,7 +105,32 @@ async function curlPostJson(url, payload, options = {}) {
   return stdout;
 }
 
+async function curlPostForm(url, payload, options = {}) {
+  const { headers = {}, timeout = 30000 } = options;
+  const body = new URLSearchParams(payload || {}).toString();
+
+  const args = [
+    '--silent',
+    '--show-error',
+    '--location',
+    '--compressed',
+    '-X',
+    'POST',
+    ...buildHeaderArgs({
+      'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+      ...headers,
+    }),
+    '--data-binary',
+    '@-',
+    url,
+  ];
+
+  const { stdout } = await runCurl(args, { input: body, timeout });
+  return stdout;
+}
+
 module.exports = {
   curlGet,
   curlPostJson,
+  curlPostForm,
 };

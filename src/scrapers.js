@@ -2,6 +2,7 @@ const prothomalo = require('./scraper');
 const ittefaq = require('./ittefaq');
 const gsmarena_bd = require('./gsmarena_bd');
 const dainikshiksha = require('./dainikshiksha');
+const bdnews24 = require('./bdnews24');
 
 const SCRAPERS = {
   prothomalo,
@@ -10,6 +11,8 @@ const SCRAPERS = {
   gsmarena: gsmarena_bd,
   dainikshiksha,
   shiksha: dainikshiksha,
+  bdnews24,
+  bdnews24_special: bdnews24,
 };
 
 const PRIMARY_SOURCES = [
@@ -17,6 +20,7 @@ const PRIMARY_SOURCES = [
   'ittefaq',
   'gsmarena_bd',
   'dainikshiksha',
+  'bdnews24',
 ];
 
 function getScraper(source) {

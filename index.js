@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const cron = require('node-cron');
 const path = require('path');
+const fs = require('fs');
 
 const { curlPostJson } = require('./src/curl');
 const {
@@ -21,6 +22,10 @@ const { upsertContentItems, insertScrapeRun, DB_FILE } = require('./src/db');
 const app = express();
 const PORT = process.env.PORT || 9999;
 const DEFAULT_CRON_SCHEDULE = process.env.SCRAPER_CRON_SCHEDULE || '0 * * * *';
+const CRON_LOG_FILE = path.join(__dirname, 'cache', 'cron-jobs.log.jsonl');
+const CRON_LOG_MAX_ITEMS = Number.parseInt(process.env.CRON_LOG_MAX_ITEMS || '500', 10);
+const PUSH_LOG_FILE = path.join(__dirname, 'cache', 'push.log.jsonl');
+const PUSH_LOG_MAX_ITEMS = Number.parseInt(process.env.PUSH_LOG_MAX_ITEMS || '1000', 10);
 
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
@@ -34,6 +39,100 @@ let scrapeStatus = {
   lastResult: null,
 };
 
+function ensureCronLogDir() {
+  fs.mkdirSync(path.dirname(CRON_LOG_FILE), { recursive: true });
+}
+
+function ensurePushLogDir() {
+  fs.mkdirSync(path.dirname(PUSH_LOG_FILE), { recursive: true });
+}
+
+function readCronLogsFromDisk() {
+  try {
+    if (!fs.existsSync(CRON_LOG_FILE)) return [];
+    const lines = fs.readFileSync(CRON_LOG_FILE, 'utf8')
+      .split(/\r?\n/)
+      .map(line => line.trim())
+      .filter(Boolean);
+    const parsed = lines.map(line => {
+      try {
+        return JSON.parse(line);
+      } catch {
+        return null;
+      }
+    }).filter(Boolean);
+    return parsed.slice(-Math.max(10, CRON_LOG_MAX_ITEMS));
+  } catch {
+    return [];
+  }
+}
+
+let cronRunLogs = readCronLogsFromDisk();
+
+function logCronEvent(event = {}) {
+  const entry = {
+    time: new Date().toISOString(),
+    ...event,
+  };
+
+  cronRunLogs.push(entry);
+  if (cronRunLogs.length > Math.max(10, CRON_LOG_MAX_ITEMS)) {
+    cronRunLogs = cronRunLogs.slice(-Math.max(10, CRON_LOG_MAX_ITEMS));
+  }
+
+  try {
+    ensureCronLogDir();
+    fs.appendFileSync(CRON_LOG_FILE, `${JSON.stringify(entry)}\n`, 'utf8');
+  } catch {
+    // Ignore log persistence errors.
+  }
+
+  return entry;
+}
+
+function readPushLogsFromDisk() {
+  try {
+    if (!fs.existsSync(PUSH_LOG_FILE)) return [];
+    const lines = fs.readFileSync(PUSH_LOG_FILE, 'utf8')
+      .split(/\r?\n/)
+      .map(line => line.trim())
+      .filter(Boolean);
+    const parsed = lines.map(line => {
+      try {
+        return JSON.parse(line);
+      } catch {
+        return null;
+      }
+    }).filter(Boolean);
+    return parsed.slice(-Math.max(20, PUSH_LOG_MAX_ITEMS));
+  } catch {
+    return [];
+  }
+}
+
+let pushRunLogs = readPushLogsFromDisk();
+
+function logPushEvent(event = {}) {
+  const entry = {
+    time: new Date().toISOString(),
+    ...event,
+  };
+
+  pushRunLogs.push(entry);
+  if (pushRunLogs.length > Math.max(20, PUSH_LOG_MAX_ITEMS)) {
+    pushRunLogs = pushRunLogs.slice(-Math.max(20, PUSH_LOG_MAX_ITEMS));
+  }
+
+  try {
+    ensurePushLogDir();
+    fs.appendFileSync(PUSH_LOG_FILE, `${JSON.stringify(entry)}\n`, 'utf8');
+  } catch {
+    // Ignore push log persistence errors.
+  }
+
+  return entry;
+}
+
 function parseJsonEnv(value, fallback = {}) {
   if (!value) return fallback;
 
@@ -44,13 +143,29 @@ function parseJsonEnv(value, fallback = {}) {
   }
 }
 
-function getPushConfig(overrides = {}) {
+function getPushConfig(kind = 'articles', overrides = {}) {
   const settings = readSettings();
-  const endpointUrl = overrides.pushUrl || settings.pushEndpointUrl || process.env.PUSH_ENDPOINT_URL || '';
-  const allowPush =
-    overrides.pushEnabled !== undefined
-      ? Boolean(overrides.pushEnabled)
-      : settings.pushEnabled !== false;
+
+  const normalizedKind = kind === 'mobiles' ? 'mobiles' : 'articles';
+  const urlOverride = normalizedKind === 'mobiles' ? overrides.pushMobilesUrl : overrides.pushArticlesUrl;
+  const enabledOverride = normalizedKind === 'mobiles' ? overrides.pushMobilesEnabled : overrides.pushArticlesEnabled;
+
+  const defaultUrl = normalizedKind === 'mobiles'
+    ? settings.pushMobilesEndpointUrl
+    : settings.pushArticlesEndpointUrl;
+  const fallbackLegacyUrl = settings.pushEndpointUrl || process.env.PUSH_ENDPOINT_URL || '';
+  const endpointUrl = urlOverride || overrides.pushUrl || defaultUrl || fallbackLegacyUrl;
+
+  const globalEnabled = overrides.pushEnabled !== undefined
+    ? Boolean(overrides.pushEnabled)
+    : settings.pushEnabled !== false;
+  const kindEnabledSetting = normalizedKind === 'mobiles'
+    ? settings.pushMobilesEnabled !== false
+    : settings.pushArticlesEnabled !== false;
+  const kindEnabled = enabledOverride !== undefined
+    ? Boolean(enabledOverride)
+    : kindEnabledSetting;
+
   const headers = {
     ...parseJsonEnv(process.env.PUSH_ENDPOINT_HEADERS_JSON, {}),
     ...(settings.pushEndpointHeaders || {}),
@@ -58,41 +173,72 @@ function getPushConfig(overrides = {}) {
   };
 
   return {
+    kind: normalizedKind,
     url: endpointUrl,
     headers,
-    enabled: allowPush && Boolean(endpointUrl),
+    enabled: globalEnabled && kindEnabled && Boolean(endpointUrl),
   };
 }
 
-async function pushArticlesToEndpoint(articles, options = {}) {
-  const pushConfig = getPushConfig(options);
+async function pushItemsToEndpoint(items, options = {}) {
+  const pushConfig = getPushConfig(options.kind || 'articles', options);
+  const payloadKey = pushConfig.kind === 'mobiles' ? 'mobiles' : 'articles';
+  const pushContext = {
+    event: 'push-result',
+    kind: pushConfig.kind,
+    trigger: options.trigger || 'manual',
+    sourceKey: options.sourceKey || null,
+    url: pushConfig.url || null,
+    itemCount: Array.isArray(items) ? items.length : 0,
+  };
 
   if (!pushConfig.enabled) {
-    return {
+    const result = {
+      kind: pushConfig.kind,
       attempted: false,
       success: false,
       count: 0,
       url: null,
       message: 'Push endpoint not configured',
     };
+    logPushEvent({
+      ...pushContext,
+      attempted: result.attempted,
+      success: result.success,
+      count: result.count,
+      status: 'disabled',
+      message: result.message,
+    });
+    return result;
   }
 
-  if (!articles.length) {
-    return {
+  if (!items.length) {
+    const result = {
+      kind: pushConfig.kind,
       attempted: true,
       success: true,
       count: 0,
       url: pushConfig.url,
-      message: 'No new articles to push',
+      message: `No new ${payloadKey} to push`,
     };
+    logPushEvent({
+      ...pushContext,
+      attempted: result.attempted,
+      success: result.success,
+      count: result.count,
+      status: 'skipped-empty',
+      message: result.message,
+    });
+    return result;
   }
 
   const payload = {
+    contentType: pushConfig.kind === 'mobiles' ? 'mobile' : 'article',
     source: options.sourceKey || 'brox',
     trigger: options.trigger || 'manual',
     pushedAt: new Date().toISOString(),
-    count: articles.length,
-    articles,
+    count: items.length,
+    [payloadKey]: items,
   };
 
   try {
@@ -101,21 +247,41 @@ async function pushArticlesToEndpoint(articles, options = {}) {
       timeout: parseInt(process.env.PUSH_ENDPOINT_TIMEOUT_MS || '30000', 10),
     });
 
-    return {
+    const result = {
+      kind: pushConfig.kind,
       attempted: true,
       success: true,
-      count: articles.length,
+      count: items.length,
       url: pushConfig.url,
       responseText: responseText.trim().slice(0, 1000),
     };
+    logPushEvent({
+      ...pushContext,
+      attempted: result.attempted,
+      success: result.success,
+      count: result.count,
+      status: 'success',
+      responseText: result.responseText,
+    });
+    return result;
   } catch (err) {
-    return {
+    const result = {
+      kind: pushConfig.kind,
       attempted: true,
       success: false,
-      count: articles.length,
+      count: items.length,
       url: pushConfig.url,
       error: err.message,
     };
+    logPushEvent({
+      ...pushContext,
+      attempted: result.attempted,
+      success: result.success,
+      count: result.count,
+      status: 'failed',
+      error: result.error,
+    });
+    return result;
   }
 }
 
@@ -159,7 +325,8 @@ async function executeScrape(trigger = 'manual', options = {}) {
   try {
     const perSource = {};
     const combinedErrors = [];
-    const pushItems = [];
+    const pushArticleItems = [];
+    const pushMobileItems = [];
 
     let combinedTotal = 0;
     let combinedSuccess = 0;
@@ -201,7 +368,11 @@ async function executeScrape(trigger = 'manual', options = {}) {
           combinedErrors.push(...result.errors.map(err => ({ ...err, sourceKey: runKey })));
         }
 
-        const allItems = result.articles || [];
+        const allItems = (result.articles || []).map(item => ({
+          ...item,
+          sourceKey: item?.sourceKey || runKey,
+          source: item?.source || runKey,
+        }));
         const mobiles = allItems.filter(item => item?.contentType === 'mobile');
         const articles = allItems.filter(item => item?.contentType !== 'mobile');
 
@@ -213,10 +384,8 @@ async function executeScrape(trigger = 'manual', options = {}) {
         combinedAddedMobilesToCache += Number(mobileCacheResult.added || 0);
         combinedUpdatedMobilesInCache += Number(mobileCacheResult.updated || 0);
 
-        pushItems.push(
-          ...(cacheResult.newArticles || []),
-          ...(mobileCacheResult.newItems || [])
-        );
+        pushArticleItems.push(...(cacheResult.newArticles || []));
+        pushMobileItems.push(...(mobileCacheResult.newItems || []));
       } catch (err) {
         const errorEntry = {
           error: err.message,
@@ -234,13 +403,37 @@ async function executeScrape(trigger = 'manual', options = {}) {
       }
     }
 
-    const pushResult = await pushArticlesToEndpoint(pushItems, {
+    const pushArticlesResult = await pushItemsToEndpoint(pushArticleItems, {
+      kind: 'articles',
       trigger,
       pushUrl: options.pushUrl,
+      pushArticlesUrl: options.pushArticlesUrl,
       pushHeaders: options.pushHeaders,
       pushEnabled: options.pushEnabled,
+      pushArticlesEnabled: options.pushArticlesEnabled,
       sourceKey: runAllSources ? 'all' : sourceKey,
     });
+
+    const pushMobilesResult = await pushItemsToEndpoint(pushMobileItems, {
+      kind: 'mobiles',
+      trigger,
+      pushUrl: options.pushUrl,
+      pushMobilesUrl: options.pushMobilesUrl,
+      pushHeaders: options.pushHeaders,
+      pushEnabled: options.pushEnabled,
+      pushMobilesEnabled: options.pushMobilesEnabled,
+      sourceKey: runAllSources ? 'all' : sourceKey,
+    });
+
+    const pushResult = {
+      attempted: Boolean(pushArticlesResult.attempted || pushMobilesResult.attempted),
+      success:
+        (!pushArticlesResult.attempted || pushArticlesResult.success) &&
+        (!pushMobilesResult.attempted || pushMobilesResult.success),
+      count: Number(pushArticlesResult.count || 0) + Number(pushMobilesResult.count || 0),
+      articles: pushArticlesResult,
+      mobiles: pushMobilesResult,
+    };
 
     const stats = getStats();
 
@@ -264,7 +457,8 @@ async function executeScrape(trigger = 'manual', options = {}) {
       addedMobilesToCache: combinedAddedMobilesToCache,
       updatedMobilesInCache: combinedUpdatedMobilesInCache,
       mobileCacheTotal: stats.totalMobilesCached,
-      pushedArticles: pushResult.count,
+      pushedArticles: Number(pushArticlesResult.count || 0),
+      pushedMobiles: Number(pushMobilesResult.count || 0),
       pushResult,
       trigger,
       sourceKey: runAllSources ? 'all' : sourceKey,
@@ -295,7 +489,7 @@ async function executeScrape(trigger = 'manual', options = {}) {
     scrapeStatus.running = false;
 
     console.log(
-      `[Scraper] Done - ${finalResult.success}/${finalResult.total} items, +${finalResult.addedToCache} articles, +${finalResult.addedMobilesToCache} mobiles, push attempted: ${pushResult.attempted}`
+      `[Scraper] Done - ${finalResult.success}/${finalResult.total} items, +${finalResult.addedToCache} articles, +${finalResult.addedMobilesToCache} mobiles, push attempted: ${pushResult.attempted}, pushed: ${pushResult.count}`
     );
 
     return finalResult;
@@ -312,14 +506,35 @@ const cronJobs = {};
 function startCronJob(schedule, name, options = {}) {
   if (cronJobs[name]) {
     cronJobs[name].task.stop();
+    logCronEvent({ event: 'cron-replaced', job: name, schedule, trigger: 'system' });
   }
 
   const task = cron.schedule(schedule, async () => {
-    console.log(`[Cron:${name}] Triggered at ${new Date().toISOString()}`);
+    const triggeredAt = new Date().toISOString();
+    console.log(`[Cron:${name}] Triggered at ${triggeredAt}`);
+    logCronEvent({ event: 'cron-triggered', job: name, schedule, trigger: 'cron' });
     try {
-      await executeScrape(`cron:${name}`, options);
+      const result = await executeScrape(`cron:${name}`, options);
+      logCronEvent({
+        event: 'cron-success',
+        job: name,
+        schedule,
+        trigger: 'cron',
+        total: result.total || 0,
+        success: result.success || 0,
+        failed: result.failed || 0,
+        pushedArticles: result.pushedArticles || 0,
+        pushedMobiles: result.pushedMobiles || 0,
+      });
     } catch (err) {
       console.error(`[Cron:${name}] Failed:`, err.message);
+      logCronEvent({
+        event: 'cron-failed',
+        job: name,
+        schedule,
+        trigger: 'cron',
+        error: err.message,
+      });
     }
   });
 
@@ -327,9 +542,11 @@ function startCronJob(schedule, name, options = {}) {
     task,
     schedule,
     options,
+    startedAt: new Date().toISOString(),
   };
 
   console.log(`[Cron] Job "${name}" started with schedule: ${schedule}`);
+  logCronEvent({ event: 'cron-started', job: name, schedule, trigger: 'system' });
 }
 
 function stopCronJob(name) {
@@ -339,6 +556,7 @@ function stopCronJob(name) {
 
   cronJobs[name].task.stop();
   delete cronJobs[name];
+  logCronEvent({ event: 'cron-stopped', job: name, trigger: 'system' });
   return true;
 }
 
@@ -369,23 +587,56 @@ try {
       maxArticles: settings.cacheMaxArticles,
       maxMobiles: settings.cacheMaxMobiles,
     });
-  }
+}
 } catch {}
+
+function clampPageLimit(value, fallback = 20) {
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+  return Math.min(parsed, 200);
+}
+
+function listCronJobs() {
+  return Object.entries(cronJobs).map(([name, job]) => ({
+    name,
+    schedule: job.schedule,
+    startedAt: job.startedAt || null,
+  }));
+}
+
+function itemMatchesSource(item, sourceQuery) {
+  if (!sourceQuery) return true;
+  const needle = String(sourceQuery).trim().toLowerCase();
+  if (!needle) return true;
+  const sourceFields = [
+    item?.sourceKey,
+    item?.source,
+    item?.scraperSource,
+  ]
+    .filter(Boolean)
+    .map(value => String(value).trim().toLowerCase());
+
+  return sourceFields.some(value => value === needle || value.includes(needle));
+}
 
 app.get('/api/status', (req, res) => {
   const stats = getStats();
   const settings = readSettings();
+  const activeCrons = listCronJobs();
   res.json({
     scraper: scrapeStatus,
     cache: stats,
-    activeCrons: Object.fromEntries(
-      Object.entries(cronJobs).map(([name, job]) => [name, { schedule: job.schedule }])
-    ),
-    push: getPushConfig(),
+    activeCrons,
+    push: {
+      articles: getPushConfig('articles'),
+      mobiles: getPushConfig('mobiles'),
+    },
     settings,
     database: { type: 'sqlite', file: DB_FILE },
     sources: listSources(),
     defaultSource: (process.env.SCRAPER_SOURCE || 'prothomalo').toString(),
+    recentCronLogs: cronRunLogs.slice(-20).reverse(),
+    recentPushLogs: pushRunLogs.slice(-30).reverse(),
   });
 });
 
@@ -394,9 +645,17 @@ app.get('/api/settings', (req, res) => {
 });
 
 app.post('/api/settings', (req, res) => {
-  const { pushEndpointUrl, pushEndpointHeaders, pushEndpointHeadersJson } = req.body || {};
+  const {
+    pushEndpointUrl,
+    pushArticlesEndpointUrl,
+    pushMobilesEndpointUrl,
+    pushEndpointHeaders,
+    pushEndpointHeadersJson,
+  } = req.body || {};
   const {
     pushEnabled,
+    pushArticlesEnabled,
+    pushMobilesEnabled,
     scrapeMaxItems,
     scrapeDelayMs,
     cacheMaxArticles,
@@ -413,8 +672,12 @@ app.post('/api/settings', (req, res) => {
 
   const updated = updateSettings({
     ...(pushEndpointUrl !== undefined ? { pushEndpointUrl } : {}),
+    ...(pushArticlesEndpointUrl !== undefined ? { pushArticlesEndpointUrl } : {}),
+    ...(pushMobilesEndpointUrl !== undefined ? { pushMobilesEndpointUrl } : {}),
     ...(headers !== undefined ? { pushEndpointHeaders: headers } : {}),
     ...(pushEnabled !== undefined ? { pushEnabled } : {}),
+    ...(pushArticlesEnabled !== undefined ? { pushArticlesEnabled } : {}),
+    ...(pushMobilesEnabled !== undefined ? { pushMobilesEnabled } : {}),
     ...(scrapeMaxItems !== undefined ? { scrapeMaxItems } : {}),
     ...(scrapeDelayMs !== undefined ? { scrapeDelayMs } : {}),
     ...(cacheMaxArticles !== undefined ? { cacheMaxArticles } : {}),
@@ -431,27 +694,129 @@ app.post('/api/scrape', async (req, res) => {
     return res.status(409).json({ error: 'Scraper already running', status: scrapeStatus });
   }
 
-  const { pushUrl, pushHeaders, pushEnabled, source, maxItems, delayMs } = req.body || {};
-  const pushConfig = getPushConfig({ pushUrl, pushHeaders, pushEnabled });
+  const {
+    pushUrl,
+    pushArticlesUrl,
+    pushMobilesUrl,
+    pushHeaders,
+    pushEnabled,
+    pushArticlesEnabled,
+    pushMobilesEnabled,
+    source,
+    maxItems,
+    delayMs,
+  } = req.body || {};
+  const pushArticlesConfig = getPushConfig('articles', {
+    pushUrl,
+    pushArticlesUrl,
+    pushHeaders,
+    pushEnabled,
+    pushArticlesEnabled,
+  });
+  const pushMobilesConfig = getPushConfig('mobiles', {
+    pushUrl,
+    pushMobilesUrl,
+    pushHeaders,
+    pushEnabled,
+    pushMobilesEnabled,
+  });
 
   res.json({
     message: 'Scrape started',
     trigger: 'manual',
     startedAt: new Date().toISOString(),
-    pushEnabled: pushConfig.enabled,
-    pushUrl: pushConfig.url || null,
+    pushEnabled: pushArticlesConfig.enabled || pushMobilesConfig.enabled,
+    push: {
+      articles: { enabled: pushArticlesConfig.enabled, url: pushArticlesConfig.url || null },
+      mobiles: { enabled: pushMobilesConfig.enabled, url: pushMobilesConfig.url || null },
+    },
     source: source || process.env.SCRAPER_SOURCE || 'prothomalo',
     maxItems: maxItems ?? null,
   });
 
-  executeScrape('manual', { pushUrl, pushHeaders, pushEnabled, source, maxItems, delayMs }).catch(err => {
+  executeScrape('manual', {
+    pushUrl,
+    pushArticlesUrl,
+    pushMobilesUrl,
+    pushHeaders,
+    pushEnabled,
+    pushArticlesEnabled,
+    pushMobilesEnabled,
+    source,
+    maxItems,
+    delayMs,
+  }).catch(err => {
     console.error('Manual scrape error:', err.message);
   });
 });
 
 app.get('/api/articles', (req, res) => {
-  const { page = 1, limit = 20, category, search, from, to } = req.query;
+  const { page = 1, limit = 20, category, search, from, to, source, sort = 'desc' } = req.query;
   let articles = readCache();
+
+  const BN_DIGITS = {
+    '০': '0',
+    '১': '1',
+    '২': '2',
+    '৩': '3',
+    '৪': '4',
+    '৫': '5',
+    '৬': '6',
+    '৭': '7',
+    '৮': '8',
+    '৯': '9',
+  };
+  const BN_MONTHS = {
+    'জানুয়ারি': '01',
+    'ফেব্রুয়ারি': '02',
+    'মার্চ': '03',
+    'এপ্রিল': '04',
+    'মে': '05',
+    'জুন': '06',
+    'জুলাই': '07',
+    'আগস্ট': '08',
+    'সেপ্টেম্বর': '09',
+    'অক্টোবর': '10',
+    'নভেম্বর': '11',
+    'ডিসেম্বর': '12',
+  };
+
+  function normalizeBanglaDigits(value) {
+    return String(value || '').replace(/[০-৯]/g, ch => BN_DIGITS[ch] || ch);
+  }
+
+  function parseBanglaPublishedText(value) {
+    const raw = normalizeBanglaDigits(value)
+      .replace(/\s+/g, ' ')
+      .replace(/[：]/g, ':')
+      .trim();
+    if (!raw) return 0;
+
+    // Examples:
+    // "প্রকাশ: 24 এপ্রিল 2026, 17:42"
+    // "আপডেট: 24 এপ্রিল 2026, 17:08"
+    const m = raw.match(/(?:প্রকাশ|আপডেট|Published|Updated)\s*:\s*(\d{1,2})\s+([^\s,]+)\s+(\d{4}),\s*(\d{1,2})\s*:\s*(\d{2})/i);
+    if (!m) return 0;
+
+    const day = String(parseInt(m[1], 10)).padStart(2, '0');
+    const month = BN_MONTHS[m[2]] || '01';
+    const year = m[3];
+    const hour = String(parseInt(m[4], 10)).padStart(2, '0');
+    const minute = m[5];
+
+    const isoWithOffset = `${year}-${month}-${day}T${hour}:${minute}:00+06:00`;
+    const ts = Date.parse(isoWithOffset);
+    return Number.isNaN(ts) ? 0 : ts;
+  }
+
+  function toTimestamp(value) {
+    const ts = Date.parse(String(value || ''));
+    return Number.isNaN(ts) ? 0 : ts;
+  }
+
+  if (source) {
+    articles = articles.filter(article => itemMatchesSource(article, source));
+  }
 
   if (category) {
     articles = articles.filter(article => article.category && article.category.includes(category));
@@ -476,9 +841,26 @@ app.get('/api/articles', (req, res) => {
     articles = articles.filter(article => article.publishedAt && new Date(article.publishedAt) <= toDate);
   }
 
+  const sortOrder = String(sort || 'desc').toLowerCase() === 'asc' ? 'asc' : 'desc';
+
+  // Sort by published time (fallback: scraped time) with configurable order.
+  articles.sort((a, b) => {
+    const bTs = Math.max(
+      toTimestamp(b?.publishedAt),
+      parseBanglaPublishedText(b?.publishedText),
+      toTimestamp(b?.scrapedAt)
+    );
+    const aTs = Math.max(
+      toTimestamp(a?.publishedAt),
+      parseBanglaPublishedText(a?.publishedText),
+      toTimestamp(a?.scrapedAt)
+    );
+    return sortOrder === 'asc' ? aTs - bTs : bTs - aTs;
+  });
+
   const total = articles.length;
   const pageNum = Number.parseInt(page, 10) || 1;
-  const limitNum = Number.parseInt(limit, 10) || 20;
+  const limitNum = clampPageLimit(limit, 20);
   const start = (pageNum - 1) * limitNum;
   const paginated = articles.slice(start, start + limitNum);
 
@@ -490,12 +872,17 @@ app.get('/api/articles', (req, res) => {
       total,
       pages: Math.ceil(total / limitNum) || 1,
     },
+    sort: sortOrder,
   });
 });
 
 app.get('/api/mobiles', (req, res) => {
-  const { page = 1, limit = 20, brand, category, status, search } = req.query;
+  const { page = 1, limit = 20, brand, category, status, search, source } = req.query;
   let mobiles = readMobilesCache();
+
+  if (source) {
+    mobiles = mobiles.filter(item => itemMatchesSource(item, source));
+  }
 
   if (brand) {
     mobiles = mobiles.filter(item => item.brand && item.brand.includes(brand));
@@ -520,7 +907,7 @@ app.get('/api/mobiles', (req, res) => {
 
   const total = mobiles.length;
   const pageNum = Number.parseInt(page, 10) || 1;
-  const limitNum = Number.parseInt(limit, 10) || 20;
+  const limitNum = clampPageLimit(limit, 20);
   const start = (pageNum - 1) * limitNum;
   const paginated = mobiles.slice(start, start + limitNum);
 
@@ -587,28 +974,49 @@ app.delete('/api/cache', (req, res) => {
 });
 
 app.post('/api/cron', (req, res) => {
-  const { action, schedule, name = 'custom', pushUrl, pushHeaders, pushEnabled, source, maxItems, delayMs } = req.body || {};
+  const {
+    action,
+    schedule,
+    name = 'custom',
+    pushUrl,
+    pushArticlesUrl,
+    pushMobilesUrl,
+    pushHeaders,
+    pushEnabled,
+    pushArticlesEnabled,
+    pushMobilesEnabled,
+    source,
+    maxItems,
+    delayMs,
+  } = req.body || {};
 
   if (action === 'start') {
     if (!schedule || !cron.validate(schedule)) {
       return res.status(400).json({ error: 'Invalid cron schedule' });
     }
 
-    startCronJob(schedule, name, { pushUrl, pushHeaders, pushEnabled, source, maxItems, delayMs });
-    return res.json({ message: `Cron job "${name}" started`, schedule });
+    startCronJob(schedule, name, {
+      pushUrl,
+      pushArticlesUrl,
+      pushMobilesUrl,
+      pushHeaders,
+      pushEnabled,
+      pushArticlesEnabled,
+      pushMobilesEnabled,
+      source,
+      maxItems,
+      delayMs,
+    });
+    return res.json({ message: `Cron job "${name}" started`, schedule, jobs: listCronJobs() });
   }
 
   if (action === 'stop') {
     const stopped = stopCronJob(name);
-    return res.json({ message: stopped ? `Cron job "${name}" stopped` : 'Job not found' });
+    return res.json({ message: stopped ? `Cron job "${name}" stopped` : 'Job not found', jobs: listCronJobs() });
   }
 
   if (action === 'list') {
-    return res.json({
-      jobs: Object.fromEntries(
-        Object.entries(cronJobs).map(([jobName, job]) => [jobName, { schedule: job.schedule }])
-      ),
-    });
+    return res.json({ jobs: listCronJobs() });
   }
 
   return res.status(400).json({ error: 'action must be start|stop|list' });
@@ -616,6 +1024,54 @@ app.post('/api/cron', (req, res) => {
 
 app.get('/api/scrape/log', (req, res) => {
   res.json({ log: scrapeStatus.log, running: scrapeStatus.running });
+});
+
+app.get('/api/cron/logs', (req, res) => {
+  const limit = clampPageLimit(req.query.limit, 50);
+  const name = (req.query.name || '').toString().trim();
+  const filtered = name
+    ? cronRunLogs.filter(entry => String(entry.job || '') === name)
+    : cronRunLogs;
+  res.json({ logs: filtered.slice(-limit).reverse(), total: filtered.length, limit });
+});
+
+app.delete('/api/cron/logs', (req, res) => {
+  cronRunLogs = [];
+  try {
+    ensureCronLogDir();
+    fs.writeFileSync(CRON_LOG_FILE, '', 'utf8');
+  } catch {}
+  res.json({ cleared: true });
+});
+
+app.get('/api/push/logs', (req, res) => {
+  const limit = clampPageLimit(req.query.limit, 100);
+  const kind = (req.query.kind || '').toString().trim().toLowerCase();
+  const sourceKey = (req.query.sourceKey || '').toString().trim().toLowerCase();
+  const successFilter = (req.query.success || '').toString().trim().toLowerCase();
+
+  const filtered = pushRunLogs.filter(entry => {
+    if (kind && String(entry.kind || '').toLowerCase() !== kind) return false;
+    if (sourceKey && String(entry.sourceKey || '').toLowerCase() !== sourceKey) return false;
+    if (successFilter === 'true' && entry.success !== true) return false;
+    if (successFilter === 'false' && entry.success !== false) return false;
+    return true;
+  });
+
+  res.json({
+    logs: filtered.slice(-limit).reverse(),
+    total: filtered.length,
+    limit,
+  });
+});
+
+app.delete('/api/push/logs', (req, res) => {
+  pushRunLogs = [];
+  try {
+    ensurePushLogDir();
+    fs.writeFileSync(PUSH_LOG_FILE, '', 'utf8');
+  } catch {}
+  res.json({ cleared: true });
 });
 
 app.listen(PORT, () => {

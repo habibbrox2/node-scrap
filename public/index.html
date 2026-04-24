@@ -606,6 +606,10 @@
       <div class="search-bar">
         <input class="input" id="articleSearch" placeholder="Search titles..." oninput="searchArticles()" />
         <input class="input" id="catFilter" placeholder="Category filter" oninput="searchArticles()" style="width:160px" />
+        <select class="input" id="articleSourceFilter" onchange="searchArticles()" style="width:170px">
+          <option value="">All sources</option>
+        </select>
+        <input class="input" id="articleLimitInput" type="number" min="1" max="200" value="15" oninput="searchArticles()" style="width:120px" placeholder="Limit" />
       </div>
 
       <div class="articles-layout">
@@ -650,6 +654,10 @@
         <input class="input" id="mobileSearch" placeholder="Search mobiles..." oninput="searchMobiles()" />
         <input class="input" id="mobileBrand" placeholder="Brand" oninput="searchMobiles()" style="width:160px" />
         <input class="input" id="mobileStatus" placeholder="Status" oninput="searchMobiles()" style="width:140px" />
+        <select class="input" id="mobileSourceFilter" onchange="searchMobiles()" style="width:170px">
+          <option value="">All sources</option>
+        </select>
+        <input class="input" id="mobileLimitInput" type="number" min="1" max="200" value="15" oninput="searchMobiles()" style="width:120px" placeholder="Limit" />
       </div>
 
       <div class="articles-layout">
@@ -736,6 +744,17 @@
       </div>
 
       <div class="card">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem">
+          <div style="font-weight:600">Cron Logs</div>
+          <div style="display:flex; gap:0.5rem">
+            <button class="btn btn-ghost" style="padding:0.3rem 0.6rem; font-size:0.75rem" onclick="loadCronLogs()">Refresh</button>
+            <button class="btn btn-danger" style="padding:0.3rem 0.6rem; font-size:0.75rem" onclick="clearCronLogs()">Clear</button>
+          </div>
+        </div>
+        <div id="cronLogBox" class="log-box" style="height:220px"><span style="color:#888">Loading cron logs...</span></div>
+      </div>
+
+      <div class="card">
         <div style="font-weight:600; margin-bottom:1rem">Add New Cron Job</div>
         <div style="display:flex; gap:0.75rem; flex-wrap:wrap">
           <div>
@@ -795,12 +814,31 @@
               <input type="checkbox" id="setPushEnabled" />
               Enable POST delivery after scrape
             </label>
+            <label style="display:flex; align-items:center; gap:0.5rem; font-family:var(--mono); font-size:0.78rem; margin-top:0.5rem">
+              <input type="checkbox" id="setPushArticlesEnabled" />
+              Enable article push
+            </label>
+            <label style="display:flex; align-items:center; gap:0.5rem; font-family:var(--mono); font-size:0.78rem; margin-top:0.35rem">
+              <input type="checkbox" id="setPushMobilesEnabled" />
+              Enable mobile push
+            </label>
           </div>
         </div>
 
         <div style="display:flex; gap:0.75rem; flex-wrap:wrap; margin-top:1rem">
           <div style="flex:1; min-width:260px">
-            <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">PUSH ENDPOINT URL</div>
+            <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">ARTICLES PUSH URL</div>
+            <input class="input" id="setPushArticlesEndpointUrl" placeholder="https://example.com/api/articles-push" style="width:100%" />
+          </div>
+          <div style="flex:1; min-width:260px">
+            <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">MOBILES PUSH URL</div>
+            <input class="input" id="setPushMobilesEndpointUrl" placeholder="https://example.com/api/mobiles-push" style="width:100%" />
+          </div>
+        </div>
+
+        <div style="display:flex; gap:0.75rem; flex-wrap:wrap; margin-top:1rem">
+          <div style="flex:1; min-width:260px">
+            <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">LEGACY/FALLBACK PUSH URL</div>
             <input class="input" id="setPushEndpointUrl" placeholder="https://broxlab.online/api/autocontent" style="width:100%" />
           </div>
           <div style="flex:1; min-width:260px">
@@ -842,6 +880,17 @@
         <div style="font-weight:700; color:#333; margin-bottom:0.35rem">Notes</div>
         <div>- These settings are saved to <span style="font-family:var(--mono)">cache/settings.json</span>.</div>
         <div>- Cache retention runs automatically (every ~10 minutes) when enabled.</div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem">
+          <div style="font-weight:700">Push Logs</div>
+          <div style="display:flex; gap:0.5rem">
+            <button class="btn btn-ghost" style="padding:0.3rem 0.6rem; font-size:0.75rem" onclick="loadPushLogs()">Refresh</button>
+            <button class="btn btn-danger" style="padding:0.3rem 0.6rem; font-size:0.75rem" onclick="clearPushLogs()">Clear</button>
+          </div>
+        </div>
+        <div id="pushLogBox" class="log-box" style="height:220px"><span style="color:#888">Loading push logs...</span></div>
       </div>
     </div>
 
@@ -908,6 +957,11 @@
             <span style="color:#888; font-size:0.78rem">Get live scrape log entries</span>
           </div>
 
+          <div style="margin-top:1.25rem">
+            <span class="tag green">GET</span> <strong>/api/push/logs?limit=100</strong><br/>
+            <span style="color:#888; font-size:0.78rem">Read push delivery logs (articles/mobiles, success/failure)</span>
+          </div>
+
           <div style="margin-top:1.25rem; padding-top:1.25rem; border-top:1px solid #eee">
             <div style="font-weight:700; color:#333; margin-bottom:0.6rem">Settings + Delivery</div>
             <div style="margin-bottom:1.1rem">
@@ -933,9 +987,14 @@
 
         <div style="display:flex; gap:0.75rem; flex-wrap:wrap">
           <div style="flex:1; min-width:260px">
-            <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">PUSH ENDPOINT URL</div>
-            <input class="input" id="pushEndpointUrl" placeholder="https://broxlab.online/api/autocontent" />
-            <div style="font-size:0.74rem; color:#888; margin-top:0.4rem">Set empty to disable automatic POST.</div>
+            <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">ARTICLES PUSH URL</div>
+            <input class="input" id="pushArticlesEndpointUrl" placeholder="https://example.com/api/articles-push" />
+            <div style="font-size:0.74rem; color:#888; margin-top:0.4rem">Set empty to disable article POST.</div>
+          </div>
+          <div style="flex:1; min-width:260px">
+            <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">MOBILES PUSH URL</div>
+            <input class="input" id="pushMobilesEndpointUrl" placeholder="https://example.com/api/mobiles-push" />
+            <div style="font-size:0.74rem; color:#888; margin-top:0.4rem">Set empty to disable mobile POST.</div>
           </div>
           <div style="flex:1; min-width:260px">
             <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">PUSH HEADERS (JSON)</div>
@@ -1005,7 +1064,7 @@
     if (name === 'cron') loadCronJobs();
     if (name === 'dashboard') loadDashboard();
     if (name === 'api') loadApiSettings();
-    if (name === 'settings') loadMainSettings();
+    if (name === 'settings') { loadMainSettings(); loadPushLogs(); }
 
     closeSidebar();
   }
@@ -1027,20 +1086,32 @@
 
   function applySettingsToInputs(data) {
     const pushUrl = (data.pushEndpointUrl || '').toString();
+    const pushArticlesUrl = (data.pushArticlesEndpointUrl || pushUrl || '').toString();
+    const pushMobilesUrl = (data.pushMobilesEndpointUrl || pushUrl || '').toString();
     const headers = data.pushEndpointHeaders || {};
 
-    const urlApi = document.getElementById('pushEndpointUrl');
+    const urlApi = document.getElementById('pushArticlesEndpointUrl');
+    const mobileUrlApi = document.getElementById('pushMobilesEndpointUrl');
     const headersApi = document.getElementById('pushEndpointHeadersJson');
-    if (urlApi) urlApi.value = pushUrl;
+    if (urlApi) urlApi.value = pushArticlesUrl;
+    if (mobileUrlApi) mobileUrlApi.value = pushMobilesUrl;
     if (headersApi) headersApi.value = JSON.stringify(headers, null, 2);
 
     const urlMain = document.getElementById('setPushEndpointUrl');
+    const urlMainArticles = document.getElementById('setPushArticlesEndpointUrl');
+    const urlMainMobiles = document.getElementById('setPushMobilesEndpointUrl');
     const headersMain = document.getElementById('setPushEndpointHeadersJson');
     if (urlMain) urlMain.value = pushUrl;
+    if (urlMainArticles) urlMainArticles.value = pushArticlesUrl;
+    if (urlMainMobiles) urlMainMobiles.value = pushMobilesUrl;
     if (headersMain) headersMain.value = JSON.stringify(headers, null, 2);
 
     const pushEnabledEl = document.getElementById('setPushEnabled');
     if (pushEnabledEl) pushEnabledEl.checked = data.pushEnabled !== false;
+    const pushArticlesEnabledEl = document.getElementById('setPushArticlesEnabled');
+    if (pushArticlesEnabledEl) pushArticlesEnabledEl.checked = data.pushArticlesEnabled !== false;
+    const pushMobilesEnabledEl = document.getElementById('setPushMobilesEnabled');
+    if (pushMobilesEnabledEl) pushMobilesEnabledEl.checked = data.pushMobilesEnabled !== false;
 
     const maxItemsEl = document.getElementById('setScrapeMaxItems');
     if (maxItemsEl) maxItemsEl.value = String(data.scrapeMaxItems ?? 10);
@@ -1061,8 +1132,8 @@
     if (cacheRetention) cacheRetention.value = String(data.cacheRetentionHours ?? 0);
 
     const pushEnabled = data.pushEnabled !== false;
-    const hasUrl = pushUrl.trim().length > 0;
-    setBadge('apiSettingsStatus', !pushEnabled ? 'Push Off' : (hasUrl ? 'Loaded' : 'Disabled'), !pushEnabled ? 'red' : (hasUrl ? 'green' : ''));
+    const hasAnyUrl = pushArticlesUrl.trim().length > 0 || pushMobilesUrl.trim().length > 0;
+    setBadge('apiSettingsStatus', !pushEnabled ? 'Push Off' : (hasAnyUrl ? 'Loaded' : 'Disabled'), !pushEnabled ? 'red' : (hasAnyUrl ? 'green' : ''));
     setBadge('mainSettingsStatus', 'Loaded', 'green');
   }
 
@@ -1093,7 +1164,11 @@
         scrapeMaxItems: (document.getElementById('setScrapeMaxItems')?.value || '10').trim(),
         scrapeDelayMs: (document.getElementById('setScrapeDelayMs')?.value || '300').trim(),
         pushEnabled: Boolean(document.getElementById('setPushEnabled')?.checked),
+        pushArticlesEnabled: Boolean(document.getElementById('setPushArticlesEnabled')?.checked),
+        pushMobilesEnabled: Boolean(document.getElementById('setPushMobilesEnabled')?.checked),
         pushEndpointUrl: (document.getElementById('setPushEndpointUrl')?.value || '').trim(),
+        pushArticlesEndpointUrl: (document.getElementById('setPushArticlesEndpointUrl')?.value || '').trim(),
+        pushMobilesEndpointUrl: (document.getElementById('setPushMobilesEndpointUrl')?.value || '').trim(),
         pushEndpointHeadersJson: headersJson || '{}',
         cacheMaxArticles: (document.getElementById('setCacheMaxArticles')?.value || '500').trim(),
         cacheMaxMobiles: (document.getElementById('setCacheMaxMobiles')?.value || '500').trim(),
@@ -1112,9 +1187,11 @@
 
   async function saveApiSettings() {
     const badge = document.getElementById('apiSettingsStatus');
-    const urlInput = document.getElementById('pushEndpointUrl');
+    const articleUrlInput = document.getElementById('pushArticlesEndpointUrl');
+    const mobileUrlInput = document.getElementById('pushMobilesEndpointUrl');
     const headersInput = document.getElementById('pushEndpointHeadersJson');
-    const pushEndpointUrl = (urlInput?.value || '').trim();
+    const pushArticlesEndpointUrl = (articleUrlInput?.value || '').trim();
+    const pushMobilesEndpointUrl = (mobileUrlInput?.value || '').trim();
     const rawHeadersJson = (headersInput?.value || '').trim();
 
     if (rawHeadersJson) {
@@ -1130,14 +1207,15 @@
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        pushEndpointUrl,
+        pushArticlesEndpointUrl,
+        pushMobilesEndpointUrl,
         pushEndpointHeadersJson: rawHeadersJson || '{}',
       }),
     });
 
     applySettingsToInputs(result);
     const pushEnabled = result.pushEnabled !== false;
-    const hasUrl = (result.pushEndpointUrl || '').trim().length > 0;
+    const hasUrl = (result.pushArticlesEndpointUrl || '').trim().length > 0 || (result.pushMobilesEndpointUrl || '').trim().length > 0;
     setBadge('apiSettingsStatus', !pushEnabled ? 'Push Off' : (hasUrl ? 'Saved' : 'Disabled'), !pushEnabled ? 'red' : (hasUrl ? 'green' : ''));
   }
 
@@ -1287,7 +1365,9 @@
     articlesPage = page;
     const search = document.getElementById('articleSearch')?.value || '';
     const cat = document.getElementById('catFilter')?.value || '';
-    const data = await api(`/api/articles?page=${page}&limit=15&search=${encodeURIComponent(search)}&category=${encodeURIComponent(cat)}`);
+    const source = document.getElementById('articleSourceFilter')?.value || '';
+    const limit = Math.max(1, Math.min(200, Number.parseInt(document.getElementById('articleLimitInput')?.value || '15', 10) || 15));
+    const data = await api(`/api/articles?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&category=${encodeURIComponent(cat)}&source=${encodeURIComponent(source)}`);
     const tbody = document.getElementById('articlesBody');
     currentArticles = data.articles || [];
 
@@ -1306,7 +1386,10 @@
       renderArticleDetails(currentArticles.find(article => article.url === selectedArticleUrl) || currentArticles[0]);
       tbody.innerHTML = currentArticles.map(a => `
         <tr class="clickable-row ${a.url === selectedArticleUrl ? 'selected-row' : ''}" onclick="selectArticle('${escapeJs(a.url)}')">
-          <td class="article-title"><a href="${a.url}" target="_blank" onclick="event.stopPropagation()">${escapeHtml(a.title || '(no title)')}</a></td>
+          <td class="article-title">
+            <a href="${a.url}" target="_blank" onclick="event.stopPropagation()">${escapeHtml(a.title || '(no title)')}</a>
+            ${getSourceName(a) ? `<div style="margin-top:4px"><span class="tag">${escapeHtml(getSourceName(a))}</span></div>` : ''}
+          </td>
           <td><span class="tag">${a.category || '—'}</span></td>
           <td style="font-size:0.78rem;color:#666">${a.author || '—'}</td>
           <td style="font-size:0.75rem;font-family:var(--mono);color:#888;white-space:nowrap">${a.publishedText || a.publishedAt?.slice(0,10) || '—'}</td>
@@ -1347,6 +1430,26 @@
       .replace(/'/g, "\\'");
   }
 
+  function getSourceName(item) {
+    const direct = item?.sourceKey || item?.scraperSource || item?.source || '';
+    if (direct) return direct;
+
+    const rawUrl = item?.url || '';
+    if (!rawUrl) return '';
+
+    try {
+      const host = new URL(rawUrl).hostname.toLowerCase();
+      if (host.includes('prothomalo.com')) return 'prothomalo';
+      if (host.includes('ittefaq.com.bd')) return 'ittefaq';
+      if (host.includes('dainikshiksha.com')) return 'dainikshiksha';
+      if (host.includes('bdnews24.com')) return 'bdnews24';
+      if (host.includes('gsmarena.com')) return 'gsmarena_bd';
+      return host.replace(/^www\./, '');
+    } catch {
+      return '';
+    }
+  }
+
   function selectArticle(url) {
     selectedArticleUrl = url;
     const article = currentArticles.find(item => item.url === url) || null;
@@ -1371,7 +1474,8 @@
     const meta = [
       article.category,
       article.author,
-      article.publishedText || article.publishedAt
+      article.publishedText || article.publishedAt,
+      getSourceName(article) ? `source: ${getSourceName(article)}` : ''
     ].filter(Boolean);
 
     const tags = (article.tags || [])
@@ -1413,8 +1517,10 @@
     const search = document.getElementById('mobileSearch')?.value || '';
     const brand = document.getElementById('mobileBrand')?.value || '';
     const status = document.getElementById('mobileStatus')?.value || '';
+    const source = document.getElementById('mobileSourceFilter')?.value || '';
+    const limit = Math.max(1, Math.min(200, Number.parseInt(document.getElementById('mobileLimitInput')?.value || '15', 10) || 15));
 
-    const data = await api(`/api/mobiles?page=${page}&limit=15&search=${encodeURIComponent(search)}&brand=${encodeURIComponent(brand)}&status=${encodeURIComponent(status)}`);
+    const data = await api(`/api/mobiles?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&brand=${encodeURIComponent(brand)}&status=${encodeURIComponent(status)}&source=${encodeURIComponent(source)}`);
     const tbody = document.getElementById('mobilesBody');
     currentMobiles = data.mobiles || [];
 
@@ -1433,7 +1539,10 @@
       renderMobileDetails(currentMobiles.find(item => item.url === selectedMobileUrl) || currentMobiles[0]);
       tbody.innerHTML = currentMobiles.map(m => `
         <tr class="clickable-row ${m.url === selectedMobileUrl ? 'selected-row' : ''}" onclick="selectMobile('${escapeJs(m.url)}')">
-          <td class="article-title"><a href="${m.url}" target="_blank" onclick="event.stopPropagation()">${escapeHtml(m.title || '(no title)')}</a></td>
+          <td class="article-title">
+            <a href="${m.url}" target="_blank" onclick="event.stopPropagation()">${escapeHtml(m.title || '(no title)')}</a>
+            ${getSourceName(m) ? `<div style="margin-top:4px"><span class="tag">${escapeHtml(getSourceName(m))}</span></div>` : ''}
+          </td>
           <td><span class="tag">${escapeHtml(m.brand || '—')}</span></td>
           <td style="font-size:0.78rem;color:#666">${escapeHtml(m.price || m.priceText || '—')}</td>
           <td><span class="tag">${escapeHtml(m.status || '—')}</span></td>
@@ -1484,6 +1593,7 @@
       mobile.productCategory || mobile.category,
       mobile.status,
       mobile.price,
+      getSourceName(mobile) ? `source: ${getSourceName(mobile)}` : '',
     ].filter(Boolean);
 
     const tags = (mobile.tags || [])
@@ -1538,6 +1648,12 @@
       .join('');
 
     sel.value = selectedSource;
+
+    const filterOptions = ['<option value="">All sources</option>', ...availableSources.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`)].join('');
+    const articleSourceSel = document.getElementById('articleSourceFilter');
+    const mobileSourceSel = document.getElementById('mobileSourceFilter');
+    if (articleSourceSel) articleSourceSel.innerHTML = filterOptions;
+    if (mobileSourceSel) mobileSourceSel.innerHTML = filterOptions;
   }
 
   // ── Scraper trigger ──
@@ -1563,17 +1679,18 @@
   async function loadCronJobs() {
     const data = await api('/api/status');
     const cronList = document.getElementById('cronList');
-    const jobs = data.activeCrons || [];
+    const jobs = Array.isArray(data.activeCrons) ? data.activeCrons : [];
     if (!jobs.length) {
       cronList.innerHTML = '<span style="color:#aaa;font-size:0.82rem">No active cron jobs</span>';
     } else {
       cronList.innerHTML = jobs.map(j => `
         <div class="cron-row">
           <span class="tag green">Active</span>
-          <span style="font-family:var(--mono);font-size:0.82rem;flex:1">${j}</span>
-          <button class="btn btn-danger" style="padding:0.3rem 0.6rem;font-size:0.75rem" onclick="stopCron('${j}')">Stop</button>
+          <span style="font-family:var(--mono);font-size:0.82rem;flex:1">${escapeHtml(j.name)} <span style="color:#888">(${escapeHtml(j.schedule)})</span></span>
+          <button class="btn btn-danger" style="padding:0.3rem 0.6rem;font-size:0.75rem" onclick="stopCron('${escapeJs(j.name)}')">Stop</button>
         </div>`).join('');
     }
+    await loadCronLogs();
   }
 
   async function addCron() {
@@ -1598,10 +1715,72 @@
     loadCronJobs();
   }
 
+  async function loadCronLogs() {
+    const data = await api('/api/cron/logs?limit=120');
+    const box = document.getElementById('cronLogBox');
+    if (!box) return;
+    const logs = data.logs || [];
+    if (!logs.length) {
+      box.innerHTML = '<span style="color:#888">No cron logs yet.</span>';
+      return;
+    }
+
+    box.innerHTML = logs.map(entry => {
+      const ts = entry.time ? entry.time.slice(11, 19) : '--:--:--';
+      const event = entry.event || 'cron-event';
+      const job = entry.job ? ` [${escapeHtml(entry.job)}]` : '';
+      const summary = entry.error
+        ? `<span style="color:#ff6060">${escapeHtml(entry.error)}</span>`
+        : `<span style="color:#888">ok:${entry.success ?? 0}/${entry.total ?? 0} pushed:${entry.pushedArticles ?? 0}+${entry.pushedMobiles ?? 0}</span>`;
+      return `<div class="log-entry"><span class="ts">[${ts}]</span> <span class="stage-listing">${escapeHtml(event)}</span>${job} ${summary}</div>`;
+    }).join('');
+  }
+
+  async function clearCronLogs() {
+    await api('/api/cron/logs', { method: 'DELETE' });
+    await loadCronLogs();
+  }
+
+  async function loadPushLogs() {
+    const box = document.getElementById('pushLogBox');
+    if (!box) return;
+
+    try {
+      const data = await api('/api/push/logs?limit=150');
+      const logs = data.logs || [];
+      if (!logs.length) {
+        box.innerHTML = '<span style="color:#888">No push logs yet.</span>';
+        return;
+      }
+
+      box.innerHTML = logs.map(entry => {
+        const ts = entry.time ? entry.time.slice(11, 19) : '--:--:--';
+        const kind = entry.kind || 'unknown';
+        const sourceKey = entry.sourceKey ? ` [${escapeHtml(entry.sourceKey)}]` : '';
+        const status = entry.status || (entry.success ? 'success' : 'failed');
+        const count = Number(entry.count ?? entry.itemCount ?? 0);
+        const statusColor = status === 'success' ? '#a0ffa0' : (status === 'failed' ? '#ff6060' : '#60b0ff');
+        const tail = entry.error
+          ? `<span style="color:#ff6060">${escapeHtml(entry.error)}</span>`
+          : `<span style="color:#888">${escapeHtml(String(entry.message || ''))}</span>`;
+
+        return `<div class="log-entry"><span class="ts">[${ts}]</span> <span style="color:${statusColor}">${escapeHtml(status)}</span> <span class="stage-listing">${escapeHtml(kind)}</span>${sourceKey} <span style="color:#aaa">count:${count}</span> ${tail}</div>`;
+      }).join('');
+    } catch {
+      box.innerHTML = '<span style="color:#ff8080">Push logs unavailable.</span>';
+    }
+  }
+
+  async function clearPushLogs() {
+    await api('/api/push/logs', { method: 'DELETE' });
+    await loadPushLogs();
+  }
+
   // ── Init ──
   loadDashboard();
   loadSources();
   loadMainSettings();
+  loadPushLogs();
   pollStatus();
   statusPollInterval = setInterval(pollStatus, 3000);
 </script>

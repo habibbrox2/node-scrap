@@ -1,0 +1,6 @@
+{"time":"2026-04-24T18:42:47.348Z","event":"cron-started","job":"hourly","schedule":"0 * * * *","trigger":"system"}
+{"time":"2026-04-24T18:59:27.223Z","event":"cron-started","job":"hourly","schedule":"0 * * * *","trigger":"system"}
+{"time":"2026-04-24T19:00:00.025Z","event":"cron-triggered","job":"hourly","schedule":"0 * * * *","trigger":"cron"}
+{"time":"2026-04-24T19:00:22.888Z","event":"cron-success","job":"hourly","schedule":"0 * * * *","trigger":"cron","total":10,"success":10,"failed":0,"pushedArticles":7,"pushedMobiles":0}
+{"time":"2026-04-24T19:01:45.112Z","event":"cron-started","job":"hourly","schedule":"0 * * * *","trigger":"system"}
+{"time":"2026-04-24T19:10:12.126Z","event":"cron-started","job":"hourly","schedule":"0 * * * *","trigger":"system"}
