@@ -3,6 +3,7 @@
 Brox Scraper is a multi-source scraping dashboard that collects content, stores it in a local JSON cache, and exposes it via a REST API. It also supports scheduled scraping via cron jobs.
 
 Default dashboard: `http://localhost:9999/`
+Hosted dashboard: `https://scrap.govinpqms.online/`
 
 ## Key Features
 
