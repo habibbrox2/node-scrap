@@ -530,6 +530,7 @@
         <a onclick="showPage('mobiles')" id="nav-mobiles">📱 Mobiles</a>
         <a onclick="showPage('scraper')" id="nav-scraper">⚙️ Scraper</a>
         <a onclick="showPage('cron')" id="nav-cron">⏰ Cron Jobs</a>
+        <a onclick="showPage('settings')" id="nav-settings">⚙️ Settings</a>
         <a onclick="showPage('api')" id="nav-api">🔌 API Docs</a>
       </nav>
     </div>
@@ -759,6 +760,91 @@
       </div>
     </div>
 
+    <!-- Settings -->
+    <div class="page" id="page-settings">
+      <div class="page-title">Settings</div>
+
+      <div class="card">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem">
+          <div style="font-weight:700">Main Settings</div>
+          <span id="mainSettingsStatus" class="tag">Not saved</span>
+        </div>
+
+        <div style="display:flex; gap:0.75rem; flex-wrap:wrap">
+          <div style="flex:1; min-width:220px">
+            <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">SCRAPE MAX ITEMS</div>
+            <select class="input" id="setScrapeMaxItems" style="width:100%">
+              <option value="3">3</option>
+              <option value="5">5</option>
+              <option value="10">10</option>
+              <option value="20">20</option>
+              <option value="0">Unlimited</option>
+            </select>
+            <div style="font-size:0.74rem; color:#888; margin-top:0.4rem">Per source run (latest/page listing).</div>
+          </div>
+
+          <div style="flex:1; min-width:220px">
+            <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">SCRAPE DELAY (MS)</div>
+            <input class="input" id="setScrapeDelayMs" type="number" min="0" step="50" placeholder="300" style="width:100%" />
+            <div style="font-size:0.74rem; color:#888; margin-top:0.4rem">Delay between item requests.</div>
+          </div>
+
+          <div style="flex:1; min-width:220px">
+            <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">PUSH ENABLED</div>
+            <label style="display:flex; align-items:center; gap:0.5rem; font-family:var(--mono); font-size:0.82rem">
+              <input type="checkbox" id="setPushEnabled" />
+              Enable POST delivery after scrape
+            </label>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:0.75rem; flex-wrap:wrap; margin-top:1rem">
+          <div style="flex:1; min-width:260px">
+            <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">PUSH ENDPOINT URL</div>
+            <input class="input" id="setPushEndpointUrl" placeholder="https://broxlab.online/api/autocontent" style="width:100%" />
+          </div>
+          <div style="flex:1; min-width:260px">
+            <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">PUSH HEADERS (JSON)</div>
+            <textarea class="input" id="setPushEndpointHeadersJson" rows="3" placeholder='{\"Authorization\":\"Bearer ...\"}' style="width:100%; resize:vertical"></textarea>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:0.75rem; flex-wrap:wrap; margin-top:1rem">
+          <div style="flex:1; min-width:220px">
+            <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">CACHE MAX ARTICLES</div>
+            <input class="input" id="setCacheMaxArticles" type="number" min="50" step="50" placeholder="500" style="width:100%" />
+          </div>
+          <div style="flex:1; min-width:220px">
+            <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">CACHE MAX MOBILES</div>
+            <input class="input" id="setCacheMaxMobiles" type="number" min="50" step="50" placeholder="500" style="width:100%" />
+          </div>
+          <div style="flex:1; min-width:220px">
+            <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">CACHE AUTO CLEAR</div>
+            <label style="display:flex; align-items:center; gap:0.5rem; font-family:var(--mono); font-size:0.82rem">
+              <input type="checkbox" id="setCacheAutoClearEnabled" />
+              Enable retention policy
+            </label>
+          </div>
+          <div style="flex:1; min-width:220px">
+            <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">CACHE RETENTION (HOURS)</div>
+            <input class="input" id="setCacheRetentionHours" type="number" min="0" step="1" placeholder="0" style="width:100%" />
+            <div style="font-size:0.74rem; color:#888; margin-top:0.4rem">0 = disabled.</div>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:1rem; justify-content:flex-end">
+          <button class="btn btn-ghost" onclick="loadMainSettings()">Reload</button>
+          <button class="btn btn-primary" onclick="saveMainSettings()">Save Settings</button>
+        </div>
+      </div>
+
+      <div class="card" style="font-size:0.82rem; color:#666; line-height:1.7">
+        <div style="font-weight:700; color:#333; margin-bottom:0.35rem">Notes</div>
+        <div>- These settings are saved to <span style="font-family:var(--mono)">cache/settings.json</span>.</div>
+        <div>- Cache retention runs automatically (every ~10 minutes) when enabled.</div>
+      </div>
+    </div>
+
     <!-- API Docs -->
     <div class="page" id="page-api">
       <div class="page-title">API Reference</div>
@@ -830,7 +916,7 @@
             </div>
             <div style="margin-bottom:1.1rem">
               <span class="tag red">POST</span> <strong>/api/settings</strong><br/>
-              <span style="color:#888; font-size:0.78rem">Update API settings (pushEndpointUrl, pushEndpointHeadersJson)</span>
+              <span style="color:#888; font-size:0.78rem">Update settings (pushEnabled, pushEndpointUrl, pushEndpointHeadersJson, scrapeMaxItems, scrapeDelayMs, cacheRetentionHours, cacheAutoClearEnabled, cacheMaxArticles, cacheMaxMobiles)</span>
             </div>
             <div>
               <span style="color:#888; font-size:0.78rem">After each scrape run (manual/cron), items are saved to JSON cache and also stored in a local SQLite DB. If a push endpoint is configured, newly added items are POSTed to it as: { source, trigger, pushedAt, count, articles: [...] }.</span>
@@ -919,6 +1005,7 @@
     if (name === 'cron') loadCronJobs();
     if (name === 'dashboard') loadDashboard();
     if (name === 'api') loadApiSettings();
+    if (name === 'settings') loadMainSettings();
 
     closeSidebar();
   }
@@ -930,25 +1017,97 @@
   }
 
   // ── API settings ──
-  async function loadApiSettings() {
-    const badge = document.getElementById('apiSettingsStatus');
+  // ── Main settings page ──
+  function setBadge(id, text, extraClass = '') {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = text;
+    el.className = `tag ${extraClass}`.trim();
+  }
+
+  function applySettingsToInputs(data) {
+    const pushUrl = (data.pushEndpointUrl || '').toString();
+    const headers = data.pushEndpointHeaders || {};
+
+    const urlApi = document.getElementById('pushEndpointUrl');
+    const headersApi = document.getElementById('pushEndpointHeadersJson');
+    if (urlApi) urlApi.value = pushUrl;
+    if (headersApi) headersApi.value = JSON.stringify(headers, null, 2);
+
+    const urlMain = document.getElementById('setPushEndpointUrl');
+    const headersMain = document.getElementById('setPushEndpointHeadersJson');
+    if (urlMain) urlMain.value = pushUrl;
+    if (headersMain) headersMain.value = JSON.stringify(headers, null, 2);
+
+    const pushEnabledEl = document.getElementById('setPushEnabled');
+    if (pushEnabledEl) pushEnabledEl.checked = data.pushEnabled !== false;
+
+    const maxItemsEl = document.getElementById('setScrapeMaxItems');
+    if (maxItemsEl) maxItemsEl.value = String(data.scrapeMaxItems ?? 10);
+
+    const delayEl = document.getElementById('setScrapeDelayMs');
+    if (delayEl) delayEl.value = String(data.scrapeDelayMs ?? 300);
+
+    const cacheMaxA = document.getElementById('setCacheMaxArticles');
+    if (cacheMaxA) cacheMaxA.value = String(data.cacheMaxArticles ?? 500);
+
+    const cacheMaxM = document.getElementById('setCacheMaxMobiles');
+    if (cacheMaxM) cacheMaxM.value = String(data.cacheMaxMobiles ?? 500);
+
+    const cacheAuto = document.getElementById('setCacheAutoClearEnabled');
+    if (cacheAuto) cacheAuto.checked = Boolean(data.cacheAutoClearEnabled);
+
+    const cacheRetention = document.getElementById('setCacheRetentionHours');
+    if (cacheRetention) cacheRetention.value = String(data.cacheRetentionHours ?? 0);
+
+    const pushEnabled = data.pushEnabled !== false;
+    const hasUrl = pushUrl.trim().length > 0;
+    setBadge('apiSettingsStatus', !pushEnabled ? 'Push Off' : (hasUrl ? 'Loaded' : 'Disabled'), !pushEnabled ? 'red' : (hasUrl ? 'green' : ''));
+    setBadge('mainSettingsStatus', 'Loaded', 'green');
+  }
+
+  async function loadMainSettings() {
     try {
       const data = await api('/api/settings');
-      const urlInput = document.getElementById('pushEndpointUrl');
-      const headersInput = document.getElementById('pushEndpointHeadersJson');
-      if (urlInput) urlInput.value = data.pushEndpointUrl || '';
-      if (headersInput) headersInput.value = JSON.stringify(data.pushEndpointHeaders || {}, null, 2);
-
-      if (badge) {
-        badge.textContent = (data.pushEndpointUrl || '').trim() ? 'Loaded' : 'Disabled';
-        badge.className = 'tag ' + ((data.pushEndpointUrl || '').trim() ? 'green' : '');
-      }
+      applySettingsToInputs(data);
+      return data;
     } catch (e) {
-      if (badge) {
-        badge.textContent = 'Offline';
-        badge.className = 'tag red';
-      }
+      setBadge('apiSettingsStatus', 'Offline', 'red');
+      setBadge('mainSettingsStatus', 'Offline', 'red');
+      throw e;
     }
+  }
+
+  async function saveMainSettings() {
+    const headersJson = (document.getElementById('setPushEndpointHeadersJson')?.value || '{}').trim();
+    if (headersJson) {
+      try { JSON.parse(headersJson); } catch { return alert('Invalid headers JSON'); }
+    }
+
+    setBadge('mainSettingsStatus', 'Saving...');
+
+    const result = await api('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        scrapeMaxItems: (document.getElementById('setScrapeMaxItems')?.value || '10').trim(),
+        scrapeDelayMs: (document.getElementById('setScrapeDelayMs')?.value || '300').trim(),
+        pushEnabled: Boolean(document.getElementById('setPushEnabled')?.checked),
+        pushEndpointUrl: (document.getElementById('setPushEndpointUrl')?.value || '').trim(),
+        pushEndpointHeadersJson: headersJson || '{}',
+        cacheMaxArticles: (document.getElementById('setCacheMaxArticles')?.value || '500').trim(),
+        cacheMaxMobiles: (document.getElementById('setCacheMaxMobiles')?.value || '500').trim(),
+        cacheAutoClearEnabled: Boolean(document.getElementById('setCacheAutoClearEnabled')?.checked),
+        cacheRetentionHours: (document.getElementById('setCacheRetentionHours')?.value || '0').trim(),
+      }),
+    });
+
+    applySettingsToInputs(result);
+    setBadge('mainSettingsStatus', 'Saved', 'green');
+  }
+
+  async function loadApiSettings() {
+    return loadMainSettings();
   }
 
   async function saveApiSettings() {
@@ -976,10 +1135,10 @@
       }),
     });
 
-    if (badge) {
-      badge.textContent = (result.pushEndpointUrl || '').trim() ? 'Saved' : 'Disabled';
-      badge.className = 'tag ' + ((result.pushEndpointUrl || '').trim() ? 'green' : '');
-    }
+    applySettingsToInputs(result);
+    const pushEnabled = result.pushEnabled !== false;
+    const hasUrl = (result.pushEndpointUrl || '').trim().length > 0;
+    setBadge('apiSettingsStatus', !pushEnabled ? 'Push Off' : (hasUrl ? 'Saved' : 'Disabled'), !pushEnabled ? 'red' : (hasUrl ? 'green' : ''));
   }
 
   // ── Status poll ──
@@ -1442,7 +1601,7 @@
   // ── Init ──
   loadDashboard();
   loadSources();
-  loadApiSettings();
+  loadMainSettings();
   pollStatus();
   statusPollInterval = setInterval(pollStatus, 3000);
 </script>

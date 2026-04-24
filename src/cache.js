@@ -79,7 +79,7 @@ function readMeta() {
   }
 }
 
-function saveToCache(articles) {
+function saveToCache(articles, options = {}) {
   ensureCacheDir();
   migrateMobilesFromArticlesCacheIfNeeded();
 
@@ -152,14 +152,15 @@ function saveToCache(articles) {
     ...existing.map(article => existingByUrl.get(article.url)).filter(Boolean),
   ];
 
-  // Keep only latest 500 articles
-  const trimmed = merged.slice(0, 500);
+  const maxItems = Number.parseInt(options.maxItems, 10);
+  const limit = Number.isFinite(maxItems) && maxItems > 0 ? maxItems : 500;
+  const trimmed = merged.slice(0, limit);
 
   fs.writeFileSync(CACHE_FILE, JSON.stringify(trimmed, null, 2));
   return { added: newArticles.length, updated, total: trimmed.length, newArticles };
 }
 
-function saveMobilesToCache(mobiles) {
+function saveMobilesToCache(mobiles, options = {}) {
   ensureCacheDir();
   migrateMobilesFromArticlesCacheIfNeeded();
 
@@ -231,9 +232,45 @@ function saveMobilesToCache(mobiles) {
     ...existing.map(item => existingByUrl.get(item.url)).filter(Boolean),
   ];
 
-  const trimmed = merged.slice(0, 500);
+  const maxItems = Number.parseInt(options.maxItems, 10);
+  const limit = Number.isFinite(maxItems) && maxItems > 0 ? maxItems : 500;
+  const trimmed = merged.slice(0, limit);
   fs.writeFileSync(MOBILE_CACHE_FILE, JSON.stringify(trimmed, null, 2));
   return { added: newItems.length, updated, total: trimmed.length, newItems };
+}
+
+function applyCachePolicy(options = {}) {
+  ensureCacheDir();
+  migrateMobilesFromArticlesCacheIfNeeded();
+
+  const maxAgeMs = Number.parseInt(options.maxAgeMs, 10) || 0;
+  const maxArticles = Number.parseInt(options.maxArticles, 10) || 500;
+  const maxMobiles = Number.parseInt(options.maxMobiles, 10) || 500;
+
+  function withinRetention(item) {
+    if (!maxAgeMs || maxAgeMs <= 0) return true;
+    const ts = Date.parse(item?.scrapedAt || item?.publishedAt || '');
+    if (Number.isNaN(ts)) return true;
+    return ts >= Date.now() - maxAgeMs;
+  }
+
+  const beforeArticles = readCache();
+  const beforeMobiles = readMobilesCache();
+
+  const articles = beforeArticles.filter(withinRetention).slice(0, Math.max(1, maxArticles));
+  const mobiles = beforeMobiles.filter(withinRetention).slice(0, Math.max(1, maxMobiles));
+
+  fs.writeFileSync(CACHE_FILE, JSON.stringify(articles, null, 2));
+  fs.writeFileSync(MOBILE_CACHE_FILE, JSON.stringify(mobiles, null, 2));
+
+  return {
+    before: { articles: beforeArticles.length, mobiles: beforeMobiles.length },
+    after: { articles: articles.length, mobiles: mobiles.length },
+    removed: {
+      articles: Math.max(0, beforeArticles.length - articles.length),
+      mobiles: Math.max(0, beforeMobiles.length - mobiles.length),
+    },
+  };
 }
 
 function updateMeta(runResult) {
@@ -294,6 +331,7 @@ module.exports = {
   readMobilesCache,
   saveToCache,
   saveMobilesToCache,
+  applyCachePolicy,
   updateMeta,
   clearCache,
   getStats,

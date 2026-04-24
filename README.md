@@ -54,8 +54,8 @@ You can also configure the push endpoint from the dashboard (API Settings) or vi
 | GET | `/api/cache/export` | Export article cache JSON |
 | GET | `/api/mobiles/export` | Export mobile cache JSON |
 | DELETE | `/api/cache` | Clear caches |
-| GET | `/api/settings` | Get API settings (push endpoint + headers) |
-| POST | `/api/settings` | Update API settings (push endpoint + headers) |
+| GET | `/api/settings` | Get main settings (scrape/push/cache) |
+| POST | `/api/settings` | Update main settings (scrape/push/cache) |
 | POST | `/api/cron` | Start/stop/list cron jobs |
 
 ### Trigger Scrape (Examples)
@@ -75,6 +75,14 @@ curl -X POST http://localhost:9999/api/scrape \
   -H "Content-Type: application/json" \
   -d "{\"source\":\"gsmarena_bd\"}"
 ```
+
+### Trigger Scrape Options
+
+`POST /api/scrape` supports optional fields:
+
+- `maxItems` (number, `0` = unlimited)
+- `delayMs` (number)
+- `pushEnabled` (boolean)
 
 ## Push Delivery (POST)
 
@@ -96,6 +104,18 @@ When a push endpoint is configured, newly-added items are POSTed after a scrape 
 curl -X POST http://localhost:9999/api/cron \
   -H "Content-Type: application/json" \
   -d "{\"action\":\"start\",\"schedule\":\"0 */3 * * *\",\"name\":\"every-3h\",\"source\":\"all\"}"
+```
+
+## Main Settings
+
+Settings are stored in `cache/settings.json` and can be edited from the dashboard (Settings page) or via `POST /api/settings`.
+
+Example:
+
+```bash
+curl -X POST http://localhost:9999/api/settings \
+  -H "Content-Type: application/json" \
+  -d "{\"scrapeMaxItems\":10,\"scrapeDelayMs\":300,\"pushEnabled\":true,\"pushEndpointUrl\":\"https://broxlab.online/api/autocontent\",\"cacheAutoClearEnabled\":false,\"cacheRetentionHours\":0,\"cacheMaxArticles\":500,\"cacheMaxMobiles\":500}"
 ```
 
 ## Database

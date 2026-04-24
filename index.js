@@ -9,6 +9,7 @@ const {
   readMobilesCache,
   saveToCache,
   saveMobilesToCache,
+  applyCachePolicy,
   updateMeta,
   clearCache,
   getStats,
@@ -46,6 +47,10 @@ function parseJsonEnv(value, fallback = {}) {
 function getPushConfig(overrides = {}) {
   const settings = readSettings();
   const endpointUrl = overrides.pushUrl || settings.pushEndpointUrl || process.env.PUSH_ENDPOINT_URL || '';
+  const allowPush =
+    overrides.pushEnabled !== undefined
+      ? Boolean(overrides.pushEnabled)
+      : settings.pushEnabled !== false;
   const headers = {
     ...parseJsonEnv(process.env.PUSH_ENDPOINT_HEADERS_JSON, {}),
     ...(settings.pushEndpointHeaders || {}),
@@ -55,7 +60,7 @@ function getPushConfig(overrides = {}) {
   return {
     url: endpointUrl,
     headers,
-    enabled: Boolean(endpointUrl),
+    enabled: allowPush && Boolean(endpointUrl),
   };
 }
 
@@ -119,6 +124,18 @@ async function executeScrape(trigger = 'manual', options = {}) {
     return { error: 'Scraper is already running', status: scrapeStatus };
   }
 
+  const settings = readSettings();
+  const maxItemsOverride = options.maxItems !== undefined ? Number.parseInt(options.maxItems, 10) : undefined;
+  const delayOverride = options.delayMs !== undefined ? Number.parseInt(options.delayMs, 10) : undefined;
+
+  const scrapeMaxItems = Number.isFinite(maxItemsOverride) && maxItemsOverride >= 0
+    ? maxItemsOverride
+    : Number.parseInt(settings.scrapeMaxItems, 10) || 0;
+
+  const scrapeDelayMs = Number.isFinite(delayOverride) && delayOverride >= 0
+    ? delayOverride
+    : Number.parseInt(settings.scrapeDelayMs, 10) || 0;
+
   const sourceKey = (options.source || process.env.SCRAPER_SOURCE || 'prothomalo')
     .toString()
     .trim()
@@ -174,7 +191,7 @@ async function executeScrape(trigger = 'manual', options = {}) {
           };
           scrapeStatus.log.push(entry);
           console.log(`[Scraper] ${runKey}:${progress.stage}: ${progress.message}`);
-        });
+        }, { maxItems: scrapeMaxItems, delayMs: scrapeDelayMs });
 
         perSource[runKey] = result;
         combinedTotal += Number(result.total || 0);
@@ -188,8 +205,8 @@ async function executeScrape(trigger = 'manual', options = {}) {
         const mobiles = allItems.filter(item => item?.contentType === 'mobile');
         const articles = allItems.filter(item => item?.contentType !== 'mobile');
 
-        const cacheResult = saveToCache(articles);
-        const mobileCacheResult = saveMobilesToCache(mobiles);
+        const cacheResult = saveToCache(articles, { maxItems: settings.cacheMaxArticles });
+        const mobileCacheResult = saveMobilesToCache(mobiles, { maxItems: settings.cacheMaxMobiles });
 
         combinedAddedToCache += Number(cacheResult.added || 0);
         combinedUpdatedInCache += Number(cacheResult.updated || 0);
@@ -221,10 +238,19 @@ async function executeScrape(trigger = 'manual', options = {}) {
       trigger,
       pushUrl: options.pushUrl,
       pushHeaders: options.pushHeaders,
+      pushEnabled: options.pushEnabled,
       sourceKey: runAllSources ? 'all' : sourceKey,
     });
 
     const stats = getStats();
+
+    if (settings.cacheAutoClearEnabled && Number.parseInt(settings.cacheRetentionHours, 10) > 0) {
+      applyCachePolicy({
+        maxAgeMs: Number.parseInt(settings.cacheRetentionHours, 10) * 60 * 60 * 1000,
+        maxArticles: settings.cacheMaxArticles,
+        maxMobiles: settings.cacheMaxMobiles,
+      });
+    }
 
     const finalResult = {
       total: combinedTotal,
@@ -318,6 +344,34 @@ function stopCronJob(name) {
 
 startCronJob(DEFAULT_CRON_SCHEDULE, 'hourly');
 
+// Apply cache retention policy periodically (if enabled in settings).
+setInterval(() => {
+  try {
+    const settings = readSettings();
+    if (!settings.cacheAutoClearEnabled) return;
+    const hours = Number.parseInt(settings.cacheRetentionHours, 10) || 0;
+    if (!hours) return;
+    applyCachePolicy({
+      maxAgeMs: hours * 60 * 60 * 1000,
+      maxArticles: settings.cacheMaxArticles,
+      maxMobiles: settings.cacheMaxMobiles,
+    });
+  } catch {
+    // Ignore background policy errors.
+  }
+}, 10 * 60 * 1000);
+
+try {
+  const settings = readSettings();
+  if (settings.cacheAutoClearEnabled && (Number.parseInt(settings.cacheRetentionHours, 10) || 0) > 0) {
+    applyCachePolicy({
+      maxAgeMs: (Number.parseInt(settings.cacheRetentionHours, 10) || 0) * 60 * 60 * 1000,
+      maxArticles: settings.cacheMaxArticles,
+      maxMobiles: settings.cacheMaxMobiles,
+    });
+  }
+} catch {}
+
 app.get('/api/status', (req, res) => {
   const stats = getStats();
   const settings = readSettings();
@@ -341,6 +395,15 @@ app.get('/api/settings', (req, res) => {
 
 app.post('/api/settings', (req, res) => {
   const { pushEndpointUrl, pushEndpointHeaders, pushEndpointHeadersJson } = req.body || {};
+  const {
+    pushEnabled,
+    scrapeMaxItems,
+    scrapeDelayMs,
+    cacheMaxArticles,
+    cacheMaxMobiles,
+    cacheAutoClearEnabled,
+    cacheRetentionHours,
+  } = req.body || {};
 
   let headers = pushEndpointHeaders;
   if (!headers && typeof pushEndpointHeadersJson === 'string') {
@@ -351,6 +414,13 @@ app.post('/api/settings', (req, res) => {
   const updated = updateSettings({
     ...(pushEndpointUrl !== undefined ? { pushEndpointUrl } : {}),
     ...(headers !== undefined ? { pushEndpointHeaders: headers } : {}),
+    ...(pushEnabled !== undefined ? { pushEnabled } : {}),
+    ...(scrapeMaxItems !== undefined ? { scrapeMaxItems } : {}),
+    ...(scrapeDelayMs !== undefined ? { scrapeDelayMs } : {}),
+    ...(cacheMaxArticles !== undefined ? { cacheMaxArticles } : {}),
+    ...(cacheMaxMobiles !== undefined ? { cacheMaxMobiles } : {}),
+    ...(cacheAutoClearEnabled !== undefined ? { cacheAutoClearEnabled } : {}),
+    ...(cacheRetentionHours !== undefined ? { cacheRetentionHours } : {}),
   });
 
   res.json(updated);
@@ -361,8 +431,8 @@ app.post('/api/scrape', async (req, res) => {
     return res.status(409).json({ error: 'Scraper already running', status: scrapeStatus });
   }
 
-  const { pushUrl, pushHeaders, source } = req.body || {};
-  const pushConfig = getPushConfig({ pushUrl, pushHeaders });
+  const { pushUrl, pushHeaders, pushEnabled, source, maxItems, delayMs } = req.body || {};
+  const pushConfig = getPushConfig({ pushUrl, pushHeaders, pushEnabled });
 
   res.json({
     message: 'Scrape started',
@@ -371,9 +441,10 @@ app.post('/api/scrape', async (req, res) => {
     pushEnabled: pushConfig.enabled,
     pushUrl: pushConfig.url || null,
     source: source || process.env.SCRAPER_SOURCE || 'prothomalo',
+    maxItems: maxItems ?? null,
   });
 
-  executeScrape('manual', { pushUrl, pushHeaders, source }).catch(err => {
+  executeScrape('manual', { pushUrl, pushHeaders, pushEnabled, source, maxItems, delayMs }).catch(err => {
     console.error('Manual scrape error:', err.message);
   });
 });
@@ -516,14 +587,14 @@ app.delete('/api/cache', (req, res) => {
 });
 
 app.post('/api/cron', (req, res) => {
-  const { action, schedule, name = 'custom', pushUrl, pushHeaders, source } = req.body || {};
+  const { action, schedule, name = 'custom', pushUrl, pushHeaders, pushEnabled, source, maxItems, delayMs } = req.body || {};
 
   if (action === 'start') {
     if (!schedule || !cron.validate(schedule)) {
       return res.status(400).json({ error: 'Invalid cron schedule' });
     }
 
-    startCronJob(schedule, name, { pushUrl, pushHeaders, source });
+    startCronJob(schedule, name, { pushUrl, pushHeaders, pushEnabled, source, maxItems, delayMs });
     return res.json({ message: `Cron job "${name}" started`, schedule });
   }
 

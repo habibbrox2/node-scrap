@@ -227,13 +227,24 @@ async function scrapeMobileDetails(url) {
   }
 }
 
-async function runScraper(onProgress) {
+async function runScraper(onProgress, options = {}) {
   const results = [];
   const errors = [];
+  const maxItems = Number.parseInt(options.maxItems, 10);
+  const delayMs = Number.parseInt(options.delayMs, 10);
+  const sleepMs = Number.isFinite(delayMs) && delayMs >= 0 ? delayMs : 250;
 
   onProgress?.({ stage: 'listing', message: 'Fetching mobile listing with curl...' });
-  const links = await scrapeMobileLinks();
-  onProgress?.({ stage: 'listing', message: `Found ${links.length} mobiles`, count: links.length });
+  const allLinks = await scrapeMobileLinks();
+  const links =
+    Number.isFinite(maxItems) && maxItems > 0
+      ? allLinks.slice(0, maxItems)
+      : allLinks;
+
+  onProgress?.({ stage: 'listing', message: `Found ${allLinks.length} mobiles`, count: allLinks.length });
+  if (links.length !== allLinks.length) {
+    onProgress?.({ stage: 'listing', message: `Limiting scrape to ${links.length} items`, count: links.length });
+  }
 
   for (let index = 0; index < links.length; index += 1) {
     const url = links[index];
@@ -251,13 +262,14 @@ async function runScraper(onProgress) {
       results.push(item);
     }
 
-    await new Promise(resolve => setTimeout(resolve, 250));
+    await new Promise(resolve => setTimeout(resolve, sleepMs));
   }
 
   return {
     articles: results,
     errors,
     total: links.length,
+    found: allLinks.length,
     success: results.length,
     failed: errors.length,
     source: LISTING_URL,
@@ -271,4 +283,3 @@ module.exports = {
   scrapeMobileLinks,
   scrapeMobileDetails,
 };
-
