@@ -1,7 +1,8 @@
 const fs = require('fs');
 const path = require('path');
+const { getCacheDir, ensureDir } = require('./appPaths');
 
-const CACHE_DIR = path.join(__dirname, '..', 'cache');
+const CACHE_DIR = getCacheDir();
 const SETTINGS_FILE = path.join(CACHE_DIR, 'settings.json');
 
 const DEFAULT_SETTINGS = {
@@ -26,9 +27,7 @@ const DEFAULT_SETTINGS = {
 };
 
 function ensureCacheDir() {
-  if (!fs.existsSync(CACHE_DIR)) {
-    fs.mkdirSync(CACHE_DIR, { recursive: true });
-  }
+  ensureDir(CACHE_DIR);
 }
 
 function readSettings() {

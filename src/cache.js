@@ -1,15 +1,14 @@
 const fs = require('fs');
 const path = require('path');
+const { getCacheDir, ensureDir } = require('./appPaths');
 
-const CACHE_DIR = path.join(__dirname, '../cache');
+const CACHE_DIR = getCacheDir();
 const CACHE_FILE = path.join(CACHE_DIR, 'articles.json');
 const MOBILE_CACHE_FILE = path.join(CACHE_DIR, 'mobiles.json');
 const META_FILE = path.join(CACHE_DIR, 'meta.json');
 
 function ensureCacheDir() {
-  if (!fs.existsSync(CACHE_DIR)) {
-    fs.mkdirSync(CACHE_DIR, { recursive: true });
-  }
+  ensureDir(CACHE_DIR);
 }
 
 function migrateMobilesFromArticlesCacheIfNeeded() {

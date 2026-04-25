@@ -3,6 +3,12 @@ const cors = require('cors');
 const cron = require('node-cron');
 const path = require('path');
 const fs = require('fs');
+const { getPublicDir, getCacheDir, ensureDir } = require('./src/appPaths');
+const {
+  installStartupShortcut,
+  removeStartupShortcut,
+  getStartupShortcutState,
+} = require('./src/windowsStartup');
 
 const { curlPostJson } = require('./src/curl');
 const {
@@ -23,14 +29,41 @@ const { toErrorDetails } = require('./src/errorDetails');
 const app = express();
 const PORT = process.env.PORT || 9999;
 const DEFAULT_CRON_SCHEDULE = process.env.SCRAPER_CRON_SCHEDULE || '0 * * * *';
-const CRON_LOG_FILE = path.join(__dirname, 'cache', 'cron-jobs.log.jsonl');
+const CACHE_DIR = getCacheDir();
+const CRON_LOG_FILE = path.join(CACHE_DIR, 'cron-jobs.log.jsonl');
 const CRON_LOG_MAX_ITEMS = Number.parseInt(process.env.CRON_LOG_MAX_ITEMS || '500', 10);
-const PUSH_LOG_FILE = path.join(__dirname, 'cache', 'push.log.jsonl');
+const PUSH_LOG_FILE = path.join(CACHE_DIR, 'push.log.jsonl');
 const PUSH_LOG_MAX_ITEMS = Number.parseInt(process.env.PUSH_LOG_MAX_ITEMS || '1000', 10);
 
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(getPublicDir()));
+
+function serveDashboard(req, res) {
+  res.sendFile(path.join(getPublicDir(), 'index.html'));
+}
+
+app.get('/', serveDashboard);
+app.get('/index.html', serveDashboard);
+
+const argSet = new Set(process.argv.slice(2).map(value => String(value).toLowerCase()));
+if (argSet.has('--install-startup') || process.env.BROX_INSTALL_STARTUP === '1') {
+  try {
+    const result = installStartupShortcut(process.execPath);
+    console.log(`[Startup] Installed shortcut at ${result.shortcutPath}`);
+  } catch (err) {
+    console.error('[Startup] Install failed:', err.message);
+  }
+}
+
+if (argSet.has('--remove-startup')) {
+  try {
+    const result = removeStartupShortcut();
+    console.log(result.removed ? `[Startup] Removed ${result.shortcutPath}` : '[Startup] No shortcut found');
+  } catch (err) {
+    console.error('[Startup] Remove failed:', err.message);
+  }
+}
 
 let scrapeStatus = {
   running: false,
@@ -41,11 +74,11 @@ let scrapeStatus = {
 };
 
 function ensureCronLogDir() {
-  fs.mkdirSync(path.dirname(CRON_LOG_FILE), { recursive: true });
+  ensureDir(path.dirname(CRON_LOG_FILE));
 }
 
 function ensurePushLogDir() {
-  fs.mkdirSync(path.dirname(PUSH_LOG_FILE), { recursive: true });
+  ensureDir(path.dirname(PUSH_LOG_FILE));
 }
 
 function readCronLogsFromDisk() {
@@ -1280,4 +1313,6 @@ app.listen(PORT, () => {
   console.log(`Brox Scraper API running at http://localhost:${PORT}`);
   console.log(`Dashboard: http://localhost:${PORT}/`);
   console.log(`API docs: http://localhost:${PORT}/api/status`);
+  const startup = getStartupShortcutState();
+  console.log(`[Startup] Shortcut ${startup.installed ? 'installed' : 'not installed'}: ${startup.shortcutPath}`);
 });

@@ -27,6 +27,25 @@ npm start
 
 Open `http://localhost:9999/`.
 
+## Windows Startup Support
+
+The server cache, SQLite DB, and runtime logs now live under `%LOCALAPPDATA%\\Brox Scraper\\cache`, so they stay writable when the app is packaged as an executable.
+
+To build the Windows executable and then register it in the Windows Startup folder:
+
+```bash
+npm run build:windows
+npm run startup:install
+```
+
+To remove that startup entry:
+
+```bash
+npm run startup:remove
+```
+
+The codebase is now packaging-friendly for a Windows `.exe` build. The remaining step is to run your chosen packager from this repo and point it at `index.js`.
+
 ## Configuration (Environment Variables)
 
 - `PORT` (default: `9999`)

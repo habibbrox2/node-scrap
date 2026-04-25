@@ -1,16 +1,15 @@
 const fs = require('fs');
 const path = require('path');
 const { DatabaseSync } = require('node:sqlite');
+const { getCacheDir, ensureDir } = require('./appPaths');
 
-const CACHE_DIR = path.join(__dirname, '..', 'cache');
+const CACHE_DIR = getCacheDir();
 const DB_FILE = path.join(CACHE_DIR, 'brox.sqlite');
 
 let db = null;
 
 function ensureCacheDir() {
-  if (!fs.existsSync(CACHE_DIR)) {
-    fs.mkdirSync(CACHE_DIR, { recursive: true });
-  }
+  ensureDir(CACHE_DIR);
 }
 
 function getDb() {

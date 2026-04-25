@@ -1,9 +1,32 @@
-node_modules/
-.tmp_*.html
-.tmp_*.js
-.env
-.DS_Store
-*.log
-npm-debug.log*
-cache/settings.json
+node_modules /
+.tmp_ *.html
+        .tmp_ *.js
+            .env
+            .env.local
+        .DS_Store
+    *.log
+npm - debug.log *
+
+# Build outputs
+dist /
+
+# Cache & Runtime
+cache / settings.json
 cache/*.sqlite*
+cache/cron-jobs.log.jsonl
+cache/push.log.jsonl
+cache/meta.json
+cache/articles.json
+cache/mobiles.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+.AppleDouble
+.LSOverride
+
