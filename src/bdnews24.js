@@ -1,5 +1,6 @@
 const { parse } = require('node-html-parser');
 const { curlGet, curlPostForm } = require('./curl');
+const { toErrorDetails } = require('./errorDetails');
 
 const BASE_URL = 'https://bangla.bdnews24.com';
 const LISTING_URL = `${BASE_URL}/special`;
@@ -280,6 +281,7 @@ async function scrapeArticleDetails(url) {
     return {
       url,
       error: err.message,
+      errorDetails: toErrorDetails(err),
       scrapedAt: new Date().toISOString(),
       fetchMethod: 'curl',
       source: 'bdnews24',

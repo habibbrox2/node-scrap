@@ -16,6 +16,7 @@ const DEFAULT_SETTINGS = {
   // Scraping
   scrapeMaxItems: 10, // 0 = unlimited
   scrapeDelayMs: 300,
+  scrapeRequestMinIntervalMs: 150,
 
   // Cache policy
   cacheMaxArticles: 500,
@@ -97,6 +98,11 @@ function updateSettings(partial = {}) {
   // Scraping
   next.scrapeMaxItems = clampInt(next.scrapeMaxItems, current.scrapeMaxItems, { min: 0, max: 200 });
   next.scrapeDelayMs = clampInt(next.scrapeDelayMs, current.scrapeDelayMs, { min: 0, max: 5000 });
+  next.scrapeRequestMinIntervalMs = clampInt(
+    next.scrapeRequestMinIntervalMs,
+    current.scrapeRequestMinIntervalMs,
+    { min: 0, max: 5000 }
+  );
 
   // Cache policy
   next.cacheMaxArticles = clampInt(next.cacheMaxArticles, current.cacheMaxArticles, { min: 50, max: 5000 });

@@ -1,5 +1,6 @@
 const { parse } = require('node-html-parser');
 const { curlGet } = require('./curl');
+const { toErrorDetails } = require('./errorDetails');
 
 const BASE_URL = 'https://www.ittefaq.com.bd';
 const LISTING_URL = `${BASE_URL}/latest-news`;
@@ -184,6 +185,7 @@ async function scrapeArticleDetails(url) {
     return {
       url,
       error: err.message,
+      errorDetails: toErrorDetails(err),
       scrapedAt: new Date().toISOString(),
       fetchMethod: 'curl',
       source: 'ittefaq',

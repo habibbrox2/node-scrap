@@ -1,5 +1,6 @@
 const { parse } = require('node-html-parser');
 const { curlGet } = require('./curl');
+const { toErrorDetails } = require('./errorDetails');
 
 const BASE_URL = 'https://www.prothomalo.com';
 const LISTING_URL = `${BASE_URL}/collection/latest`;
@@ -385,6 +386,7 @@ async function scrapeArticleDetails(url) {
     return {
       url,
       error: err.message,
+      errorDetails: toErrorDetails(err),
       scrapedAt: new Date().toISOString(),
       fetchMethod: 'curl',
     };

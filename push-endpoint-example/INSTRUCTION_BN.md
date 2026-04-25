@@ -106,10 +106,51 @@ MySQL কাজ না করলে এখানে JSON line format-এ request
 - `Invalid JSON payload` → request body JSON না  
 - `Unauthorized` → Bearer token mismatch  
 - `Push endpoint not configured` → dashboard settings-এ URL empty
+- `Invalid PUSH HEADERS JSON` → PUSH HEADERS field এ valid JSON নেই
 
 ---
 
-## 9) Security tips
+## 9) PUSH HEADERS Field (Updated)
+
+**PUSH HEADERS এখন একটি Text Input Field** (আগে textarea ছিল):
+
+- **Format**: JSON সব একটি লাইনে  
+- **Example**: `{"Authorization":"Bearer YOUR_SECRET_TOKEN"}`
+- **Multiple headers**: `{"Authorization":"Bearer ...","X-Custom":"value"}`
+- খালি থাকলে কোন extra header যুক্ত হবে না
+
+---
+
+## 10) Manual Push System (নতুন ফিচার)
+
+Dashboard Settings পেজে একটি নতুন **Manual Push** সেকশন যোগ হয়েছে:
+
+### কী করে?
+- Scraping ছাড়াই সরাসরি সব cached articles/mobiles যুক্ত করা endpoint এ পাঠায়
+- Manual testing এবং data re-delivery এর জন্য দরকারী
+
+### কীভাবে ব্যবহার করবেন:
+1. Dashboard Settings page খুলুন
+2. **Manual Push** সেকশন খুঁজুন
+3. এক্সপ্লোর করুন:
+   - **Push Articles** বাটন → সব cached articles পাঠায়
+   - **Push Mobiles** বাটন → সব cached mobiles পাঠায়
+
+### Push Logs দেখতে:
+- Settings page এর নিচে **Push Logs** সেকশন আছে
+- **Refresh** বাটন → লেটেস্ট push logs আপডেট করুন
+- **Clear** বাটন → সব push logs delete করুন
+- প্রতিটি log এ: timestamp, status, type, item count, error message (যদি failure হয়)
+
+### Test করবেন:
+1. কিছু articles/mobiles cache এ আছে কি না চেক করুন
+2. Manual Push এর কোন বাটন ক্লিক করুন
+3. Push Logs refresh করে status দেখুন (success/failed)
+4. আপনার endpoint server এ items পৌঁছেছে কি না যাচাই করুন
+
+---
+
+## 11) Security tips
 
 - Production এ `$requireAuth = true` রাখুন  
 - শক্তিশালী token ব্যবহার করুন  

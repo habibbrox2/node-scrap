@@ -1,5 +1,6 @@
 const { parse } = require('node-html-parser');
 const { curlGet } = require('./curl');
+const { toErrorDetails } = require('./errorDetails');
 
 const BASE_URL = 'https://www.gsmarena.com.bd';
 const LISTING_URL = `${BASE_URL}/`;
@@ -219,6 +220,7 @@ async function scrapeMobileDetails(url) {
     return {
       url,
       error: err.message,
+      errorDetails: toErrorDetails(err),
       scrapedAt: new Date().toISOString(),
       fetchMethod: 'curl',
       source: 'gsmarena_bd',

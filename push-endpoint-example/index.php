@@ -181,13 +181,31 @@ if (!is_array($payload)) {
 // -------------------------
 $kind = 'unknown';
 $count = 0;
+$items = [];
 
-if (isset($payload['articles']) && is_array($payload['articles'])) {
+// New unified shape: `items` (preferred)
+if (isset($payload['items']) && is_array($payload['items'])) {
+    $items = $payload['items'];
+
+    $contentType = isset($payload['contentType']) ? strtolower(trim((string)$payload['contentType'])) : '';
+    if ($contentType === 'mobile') {
+        $kind = 'mobiles';
+    } elseif ($contentType === 'article') {
+        $kind = 'articles';
+    } else {
+        $kind = 'items';
+    }
+    $count = count($items);
+} elseif (isset($payload['articles']) && is_array($payload['articles'])) {
+    // Legacy shape: `articles`
     $kind = 'articles';
-    $count = count($payload['articles']);
+    $items = $payload['articles'];
+    $count = count($items);
 } elseif (isset($payload['mobiles']) && is_array($payload['mobiles'])) {
+    // Legacy shape: `mobiles`
     $kind = 'mobiles';
-    $count = count($payload['mobiles']);
+    $items = $payload['mobiles'];
+    $count = count($items);
 }
 
 // -------------------------
@@ -227,5 +245,6 @@ respond(200, [
     'message' => 'Push received',
     'kind' => $kind,
     'count' => $count,
+    'itemsKey' => isset($payload['items']) ? 'items' : (isset($payload['articles']) ? 'articles' : (isset($payload['mobiles']) ? 'mobiles' : null)),
     'storedIn' => $storedIn,
 ]);

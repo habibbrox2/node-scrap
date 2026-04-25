@@ -18,6 +18,7 @@ const {
 const { getScraper, listSources } = require('./src/scrapers');
 const { readSettings, updateSettings } = require('./src/settings');
 const { upsertContentItems, insertScrapeRun, DB_FILE } = require('./src/db');
+const { toErrorDetails } = require('./src/errorDetails');
 
 const app = express();
 const PORT = process.env.PORT || 9999;
@@ -166,7 +167,10 @@ function getPushConfig(kind = 'articles', overrides = {}) {
     ? Boolean(enabledOverride)
     : kindEnabledSetting;
 
+  const bearerToken = (process.env.SCRAPER_PUSH_BEARER_TOKEN || '').toString().trim();
+  const autoAuthHeader = bearerToken ? { Authorization: `Bearer ${bearerToken}` } : {};
   const headers = {
+    ...autoAuthHeader,
     ...parseJsonEnv(process.env.PUSH_ENDPOINT_HEADERS_JSON, {}),
     ...(settings.pushEndpointHeaders || {}),
     ...(overrides.pushHeaders || {}),
@@ -237,23 +241,101 @@ async function pushItemsToEndpoint(items, options = {}) {
     source: options.sourceKey || 'brox',
     trigger: options.trigger || 'manual',
     pushedAt: new Date().toISOString(),
-    count: items.length,
-    [payloadKey]: items,
   };
 
+  const configuredBatchSize = Number.parseInt(
+    String(options.batchSize ?? process.env.PUSH_BATCH_SIZE ?? '25'),
+    10
+  );
+  const batchSize = Number.isFinite(configuredBatchSize) && configuredBatchSize > 0
+    ? configuredBatchSize
+    : items.length;
+  const batches = [];
+  for (let i = 0; i < items.length; i += batchSize) {
+    batches.push(items.slice(i, i + batchSize));
+  }
+
+  let pushedCount = 0;
+
   try {
-    const responseText = await curlPostJson(pushConfig.url, payload, {
-      headers: pushConfig.headers,
-      timeout: parseInt(process.env.PUSH_ENDPOINT_TIMEOUT_MS || '30000', 10),
-    });
+    for (let index = 0; index < batches.length; index += 1) {
+      const batchItems = batches[index];
+      // Keep a unified `items` array for easier consumption on the receiver side,
+      // while also preserving legacy keys (`articles` / `mobiles`) for compatibility.
+      const body = {
+        ...payload,
+        count: batchItems.length,
+        items: batchItems,
+        [payloadKey]: batchItems,
+      };
+      const response = await curlPostJson(pushConfig.url, {
+        ...body,
+      }, {
+        headers: pushConfig.headers,
+        timeout: parseInt(process.env.PUSH_ENDPOINT_TIMEOUT_MS || '30000', 10),
+      });
+      const httpStatus = Number.parseInt(response?.statusCode, 10) || 0;
+      const responseText = typeof response?.body === 'string' ? response.body : '';
+
+      const responseSnippet = responseText.trim().slice(0, 1000);
+      let parsedResponse = null;
+      try {
+        parsedResponse = responseText ? JSON.parse(responseText) : null;
+      } catch {
+        parsedResponse = null;
+      }
+
+      const endpointRejected = Boolean(
+        (httpStatus && (httpStatus < 200 || httpStatus >= 300)) ||
+        parsedResponse &&
+        typeof parsedResponse === 'object' &&
+        (parsedResponse.success === false || parsedResponse.ok === false)
+      );
+      if (endpointRejected) {
+        const errorMessage =
+          (httpStatus && (httpStatus < 200 || httpStatus >= 300) && `Push endpoint returned HTTP ${httpStatus}`) ||
+          (typeof parsedResponse.error === 'string' && parsedResponse.error.trim()) ||
+          (typeof parsedResponse.message === 'string' && parsedResponse.message.trim()) ||
+          'Push endpoint returned failure';
+        const result = {
+          kind: pushConfig.kind,
+          attempted: true,
+          success: false,
+          count: pushedCount,
+          url: pushConfig.url,
+          error: errorMessage,
+          responseText: responseSnippet,
+        };
+        logPushEvent({
+          ...pushContext,
+          attempted: result.attempted,
+          success: result.success,
+          count: result.count,
+          status: 'failed-response',
+          httpStatus,
+          batch: {
+            index: index + 1,
+            total: batches.length,
+            size: batchItems.length,
+          },
+          error: result.error,
+          responseText: result.responseText,
+        });
+        return result;
+      }
+
+      pushedCount += batchItems.length;
+    }
 
     const result = {
       kind: pushConfig.kind,
       attempted: true,
       success: true,
-      count: items.length,
+      count: pushedCount,
       url: pushConfig.url,
-      responseText: responseText.trim().slice(0, 1000),
+      message: batches.length > 1
+        ? `Pushed in ${batches.length} batches`
+        : undefined,
     };
     logPushEvent({
       ...pushContext,
@@ -261,7 +343,11 @@ async function pushItemsToEndpoint(items, options = {}) {
       success: result.success,
       count: result.count,
       status: 'success',
-      responseText: result.responseText,
+      batch: {
+        total: batches.length,
+        size: batchSize,
+      },
+      message: result.message,
     });
     return result;
   } catch (err) {
@@ -302,6 +388,10 @@ async function executeScrape(trigger = 'manual', options = {}) {
     ? delayOverride
     : Number.parseInt(settings.scrapeDelayMs, 10) || 0;
 
+  process.env.SCRAPER_REQUEST_MIN_INTERVAL_MS = String(
+    Number.parseInt(settings.scrapeRequestMinIntervalMs, 10) || 0
+  );
+
   const sourceKey = (options.source || process.env.SCRAPER_SOURCE || 'prothomalo')
     .toString()
     .trim()
@@ -309,6 +399,9 @@ async function executeScrape(trigger = 'manual', options = {}) {
 
   const runAllSources = sourceKey === 'all' || sourceKey === '*';
   const sourcesToRun = runAllSources ? listSources() : [sourceKey];
+  const pushAllCached = options.pushAllCached !== undefined
+    ? Boolean(options.pushAllCached)
+    : String(process.env.PUSH_ALL_CACHED || '1').toLowerCase() !== 'false';
 
   scrapeStatus = {
     running: true,
@@ -389,6 +482,7 @@ async function executeScrape(trigger = 'manual', options = {}) {
       } catch (err) {
         const errorEntry = {
           error: err.message,
+          errorDetails: toErrorDetails(err),
           sourceKey: runKey,
         };
         perSource[runKey] = errorEntry;
@@ -399,11 +493,15 @@ async function executeScrape(trigger = 'manual', options = {}) {
           stage: 'error',
           message: `Source failed: ${runKey} (${err.message})`,
           sourceKey: runKey,
+          errorDetails: toErrorDetails(err),
         });
       }
     }
 
-    const pushArticlesResult = await pushItemsToEndpoint(pushArticleItems, {
+    const articlesForPush = pushAllCached ? readCache() : pushArticleItems;
+    const mobilesForPush = pushAllCached ? readMobilesCache() : pushMobileItems;
+
+    const pushArticlesResult = await pushItemsToEndpoint(articlesForPush, {
       kind: 'articles',
       trigger,
       pushUrl: options.pushUrl,
@@ -414,7 +512,7 @@ async function executeScrape(trigger = 'manual', options = {}) {
       sourceKey: runAllSources ? 'all' : sourceKey,
     });
 
-    const pushMobilesResult = await pushItemsToEndpoint(pushMobileItems, {
+    const pushMobilesResult = await pushItemsToEndpoint(mobilesForPush, {
       kind: 'mobiles',
       trigger,
       pushUrl: options.pushUrl,
@@ -459,6 +557,7 @@ async function executeScrape(trigger = 'manual', options = {}) {
       mobileCacheTotal: stats.totalMobilesCached,
       pushedArticles: Number(pushArticlesResult.count || 0),
       pushedMobiles: Number(pushMobilesResult.count || 0),
+      pushAllCached,
       pushResult,
       trigger,
       sourceKey: runAllSources ? 'all' : sourceKey,
@@ -481,6 +580,7 @@ async function executeScrape(trigger = 'manual', options = {}) {
         time: new Date().toISOString(),
         stage: 'db',
         message: `DB store failed: ${dbErr.message}`,
+        errorDetails: toErrorDetails(dbErr),
       });
     }
 
@@ -496,7 +596,14 @@ async function executeScrape(trigger = 'manual', options = {}) {
   } catch (err) {
     console.error('[Scraper] Error:', err.message);
     scrapeStatus.running = false;
-    scrapeStatus.lastResult = { error: err.message };
+    const errorDetails = toErrorDetails(err);
+    scrapeStatus.log.push({
+      time: new Date().toISOString(),
+      stage: 'error',
+      message: `Scrape failed: ${err.message}`,
+      errorDetails,
+    });
+    scrapeStatus.lastResult = { error: err.message, errorDetails };
     throw err;
   }
 }
@@ -587,8 +694,8 @@ try {
       maxArticles: settings.cacheMaxArticles,
       maxMobiles: settings.cacheMaxMobiles,
     });
-}
-} catch {}
+  }
+} catch { }
 
 function clampPageLimit(value, fallback = 20) {
   const parsed = Number.parseInt(value, 10);
@@ -658,6 +765,7 @@ app.post('/api/settings', (req, res) => {
     pushMobilesEnabled,
     scrapeMaxItems,
     scrapeDelayMs,
+    scrapeRequestMinIntervalMs,
     cacheMaxArticles,
     cacheMaxMobiles,
     cacheAutoClearEnabled,
@@ -680,6 +788,7 @@ app.post('/api/settings', (req, res) => {
     ...(pushMobilesEnabled !== undefined ? { pushMobilesEnabled } : {}),
     ...(scrapeMaxItems !== undefined ? { scrapeMaxItems } : {}),
     ...(scrapeDelayMs !== undefined ? { scrapeDelayMs } : {}),
+    ...(scrapeRequestMinIntervalMs !== undefined ? { scrapeRequestMinIntervalMs } : {}),
     ...(cacheMaxArticles !== undefined ? { cacheMaxArticles } : {}),
     ...(cacheMaxMobiles !== undefined ? { cacheMaxMobiles } : {}),
     ...(cacheAutoClearEnabled !== undefined ? { cacheAutoClearEnabled } : {}),
@@ -702,6 +811,7 @@ app.post('/api/scrape', async (req, res) => {
     pushEnabled,
     pushArticlesEnabled,
     pushMobilesEnabled,
+    pushAllCached,
     source,
     maxItems,
     delayMs,
@@ -730,6 +840,7 @@ app.post('/api/scrape', async (req, res) => {
       articles: { enabled: pushArticlesConfig.enabled, url: pushArticlesConfig.url || null },
       mobiles: { enabled: pushMobilesConfig.enabled, url: pushMobilesConfig.url || null },
     },
+    pushMode: pushAllCached === false ? 'new-only' : 'all-cached',
     source: source || process.env.SCRAPER_SOURCE || 'prothomalo',
     maxItems: maxItems ?? null,
   });
@@ -742,6 +853,7 @@ app.post('/api/scrape', async (req, res) => {
     pushEnabled,
     pushArticlesEnabled,
     pushMobilesEnabled,
+    pushAllCached,
     source,
     maxItems,
     delayMs,
@@ -1040,7 +1152,7 @@ app.delete('/api/cron/logs', (req, res) => {
   try {
     ensureCronLogDir();
     fs.writeFileSync(CRON_LOG_FILE, '', 'utf8');
-  } catch {}
+  } catch { }
   res.json({ cleared: true });
 });
 
@@ -1070,8 +1182,98 @@ app.delete('/api/push/logs', (req, res) => {
   try {
     ensurePushLogDir();
     fs.writeFileSync(PUSH_LOG_FILE, '', 'utf8');
-  } catch {}
+  } catch { }
   res.json({ cleared: true });
+});
+
+app.post('/api/push/manual', async (req, res) => {
+  const { type } = req.body || {};
+
+  if (!type || (type !== 'articles' && type !== 'mobiles' && type !== 'all')) {
+    return res.status(400).json({ error: 'Invalid type. Must be "articles", "mobiles", or "all".' });
+  }
+
+  try {
+    if (type === 'all') {
+      const articles = readCache();
+      const mobiles = readMobilesCache();
+
+      const articlesResult = await pushItemsToEndpoint(Array.isArray(articles) ? articles : [], {
+        kind: 'articles',
+        trigger: 'manual-push',
+      });
+
+      const mobilesResult = await pushItemsToEndpoint(Array.isArray(mobiles) ? mobiles : [], {
+        kind: 'mobiles',
+        trigger: 'manual-push',
+      });
+
+      const overallSuccess =
+        (!articlesResult.attempted || articlesResult.success) &&
+        (!mobilesResult.attempted || mobilesResult.success);
+      const totalCount = Number(articlesResult.count || 0) + Number(mobilesResult.count || 0);
+
+      if (!overallSuccess) {
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to push one or more data types',
+          result: {
+            attempted: true,
+            success: false,
+            count: totalCount,
+            articles: articlesResult,
+            mobiles: mobilesResult,
+          },
+        });
+      }
+
+      return res.json({
+        success: true,
+        message: `Successfully pushed ${totalCount} items (articles + mobiles)`,
+        result: {
+          attempted: true,
+          success: true,
+          count: totalCount,
+          articles: articlesResult,
+          mobiles: mobilesResult,
+        },
+      });
+    }
+
+    let items = [];
+
+    if (type === 'articles') {
+      const cache = readCache();
+      items = Array.isArray(cache) ? cache : [];
+    } else {
+      const cache = readMobilesCache();
+      items = Array.isArray(cache) ? cache : [];
+    }
+
+    const result = await pushItemsToEndpoint(items, {
+      kind: type,
+      trigger: 'manual-push',
+    });
+
+    if (result.success) {
+      res.json({
+        success: true,
+        message: `Successfully pushed ${result.count} ${type}`,
+        result,
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        message: result.message || `Failed to push ${type}`,
+        result,
+      });
+    }
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: 'Error during manual push: ' + err.message,
+    });
+  }
 });
 
 app.listen(PORT, () => {

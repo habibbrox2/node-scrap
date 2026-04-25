@@ -1,11 +1,14 @@
 <!DOCTYPE html>
 <html lang="bn">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Brox Scraper Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Bengali:wght@400;600;700&family=JetBrains+Mono:wght@400;600&family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Noto+Serif+Bengali:wght@400;600;700&family=JetBrains+Mono:wght@400;600&family=Sora:wght@300;400;600;700&display=swap"
+    rel="stylesheet" />
   <style>
     :root {
       --red: #e8162a;
@@ -21,7 +24,11 @@
       --sans: 'Sora', sans-serif;
     }
 
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
     body {
       font-family: var(--sans);
@@ -53,7 +60,9 @@
       letter-spacing: -0.02em;
     }
 
-    .logo span { color: var(--red); }
+    .logo span {
+      color: var(--red);
+    }
 
     .header-status {
       display: flex;
@@ -78,33 +87,53 @@
       cursor: pointer;
     }
 
-    .menu-btn:hover { background: #111; }
+    .menu-btn:hover {
+      background: #111;
+    }
 
     .pulse-dot {
-      width: 8px; height: 8px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
       background: #444;
       flex-shrink: 0;
     }
+
     .pulse-dot.active {
       background: var(--red);
       animation: pulse 1.2s infinite;
     }
-    .pulse-dot.idle { background: #3a3; }
+
+    .pulse-dot.idle {
+      background: #3a3;
+    }
 
     @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.5; transform: scale(1.3); }
+
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: 0.5;
+        transform: scale(1.3);
+      }
     }
 
     /* ── Layout ── */
-    .main { display: grid; grid-template-columns: 280px 1fr; min-height: calc(100vh - 65px); }
+    .main {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      min-height: calc(100vh - 65px);
+    }
 
     .sidebar-overlay {
       display: none;
       position: fixed;
       inset: 65px 0 0 0;
-      background: rgba(0,0,0,0.55);
+      background: rgba(0, 0, 0, 0.55);
       z-index: 90;
     }
 
@@ -140,12 +169,16 @@
       cursor: pointer;
     }
 
-    nav a:hover, nav a.active {
+    nav a:hover,
+    nav a.active {
       background: #1a1a1a;
       color: var(--paper);
     }
 
-    nav a.active { border-left: 3px solid var(--red); padding-left: calc(0.8rem - 3px); }
+    nav a.active {
+      border-left: 3px solid var(--red);
+      padding-left: calc(0.8rem - 3px);
+    }
 
     .stat-pill {
       background: #1a1a1a;
@@ -153,7 +186,13 @@
       padding: 1rem;
     }
 
-    .stat-pill .label { font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase; color: #666; }
+    .stat-pill .label {
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #666;
+    }
+
     .stat-pill .val {
       font-family: var(--mono);
       font-size: 1.6rem;
@@ -162,7 +201,10 @@
       line-height: 1.2;
       margin-top: 0.2rem;
     }
-    .stat-pill .val.red { color: var(--red); }
+
+    .stat-pill .val.red {
+      color: var(--red);
+    }
 
     /* ── Content ── */
     .content {
@@ -170,8 +212,13 @@
       overflow-y: auto;
     }
 
-    .page { display: none; }
-    .page.active { display: block; }
+    .page {
+      display: none;
+    }
+
+    .page.active {
+      display: block;
+    }
 
     .page-title {
       font-family: var(--serif);
@@ -201,13 +248,40 @@
       text-decoration: none;
     }
 
-    .btn-primary { background: var(--red); color: white; }
-    .btn-primary:hover { background: var(--red-dim); }
-    .btn-primary:disabled { background: #888; cursor: not-allowed; }
-    .btn-ghost { background: transparent; color: var(--ink); border: 1.5px solid var(--rule); }
-    .btn-ghost:hover { border-color: var(--ink); }
-    .btn-danger { background: transparent; color: #c00; border: 1.5px solid #c00; }
-    .btn-danger:hover { background: #c00; color: white; }
+    .btn-primary {
+      background: var(--red);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--red-dim);
+    }
+
+    .btn-primary:disabled {
+      background: #888;
+      cursor: not-allowed;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--ink);
+      border: 1.5px solid var(--rule);
+    }
+
+    .btn-ghost:hover {
+      border-color: var(--ink);
+    }
+
+    .btn-danger {
+      background: transparent;
+      color: #c00;
+      border: 1.5px solid #c00;
+    }
+
+    .btn-danger:hover {
+      background: #c00;
+      color: white;
+    }
 
     /* ── Cards ── */
     .card {
@@ -218,7 +292,12 @@
       margin-bottom: 1rem;
     }
 
-    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
 
     .metric-card {
       background: white;
@@ -227,7 +306,13 @@
       padding: 1.25rem;
     }
 
-    .metric-card .m-label { font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase; color: #888; }
+    .metric-card .m-label {
+      font-size: 0.65rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #888;
+    }
+
     .metric-card .m-val {
       font-family: var(--mono);
       font-size: 2rem;
@@ -236,10 +321,17 @@
       line-height: 1.1;
       margin: 0.25rem 0;
     }
-    .metric-card .m-sub { font-size: 0.75rem; color: #888; }
+
+    .metric-card .m-sub {
+      font-size: 0.75rem;
+      color: #888;
+    }
 
     /* ── Table ── */
-    .table-wrap { overflow-x: auto; }
+    .table-wrap {
+      overflow-x: auto;
+    }
+
     .articles-layout {
       display: grid;
       grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.85fr);
@@ -270,9 +362,17 @@
       vertical-align: top;
     }
 
-    tr:hover td { background: var(--paper); }
-    tr.clickable-row { cursor: pointer; }
-    tr.selected-row td { background: #fff4ea; }
+    tr:hover td {
+      background: var(--paper);
+    }
+
+    tr.clickable-row {
+      cursor: pointer;
+    }
+
+    tr.selected-row td {
+      background: #fff4ea;
+    }
 
     .tag {
       display: inline-block;
@@ -284,8 +384,15 @@
       font-family: var(--mono);
     }
 
-    .tag.red { background: #fdecea; color: var(--red); }
-    .tag.green { background: #e6f4ea; color: var(--success); }
+    .tag.red {
+      background: #fdecea;
+      color: var(--red);
+    }
+
+    .tag.green {
+      background: #e6f4ea;
+      color: var(--success);
+    }
 
     /* ── Log ── */
     .log-box {
@@ -300,11 +407,86 @@
       line-height: 1.6;
     }
 
-    .log-entry { margin-bottom: 2px; }
-    .log-entry .ts { color: #555; }
-    .log-entry .stage-listing { color: #60b0ff; }
-    .log-entry .stage-article { color: #a0ffa0; }
-    .log-entry .stage-error { color: #ff6060; }
+    .log-entry {
+      margin-bottom: 2px;
+    }
+
+    .log-entry .ts {
+      color: #555;
+    }
+
+    .log-entry .stage-listing {
+      color: #60b0ff;
+    }
+
+    .log-entry .stage-article {
+      color: #a0ffa0;
+    }
+
+    .log-entry .stage-error {
+      color: #ff6060;
+    }
+
+    .log-error-details,
+    .error-details-block {
+      margin-top: 0.45rem;
+    }
+
+    .log-error-details summary,
+    .error-summary {
+      cursor: pointer;
+      color: #ffd0d0;
+      font-size: 0.72rem;
+      list-style: none;
+    }
+
+    .log-error-details summary::-webkit-details-marker,
+    .error-summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .log-error-details pre,
+    .error-details-pre {
+      margin-top: 0.5rem;
+      padding: 0.75rem;
+      border-radius: 4px;
+      background: #141414;
+      color: #f3f3f3;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 0.7rem;
+      line-height: 1.5;
+      border: 1px solid #2c2c2c;
+    }
+
+    .scraper-error-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .scraper-error-item {
+      border: 1px solid var(--paper-2);
+      border-radius: 4px;
+      padding: 0.85rem;
+      background: #fffdf8;
+    }
+
+    .scraper-error-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .scraper-error-message {
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      color: #7a1f1f;
+      margin-top: 0.35rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
 
     /* ── Cron ── */
     .cron-row {
@@ -329,7 +511,10 @@
       transition: border-color 0.15s;
     }
 
-    .input:focus { outline: none; border-color: var(--red); }
+    .input:focus {
+      outline: none;
+      border-color: var(--red);
+    }
 
     /* ── Articles search ── */
     .search-bar {
@@ -338,7 +523,9 @@
       margin-bottom: 1rem;
     }
 
-    .search-bar .input { flex: 1; }
+    .search-bar .input {
+      flex: 1;
+    }
 
     .article-title a {
       color: var(--ink);
@@ -347,7 +534,9 @@
       font-size: 0.88rem;
     }
 
-    .article-title a:hover { color: var(--red); }
+    .article-title a:hover {
+      color: var(--red);
+    }
 
     .pagination {
       display: flex;
@@ -372,8 +561,16 @@
       transition: all 0.1s;
     }
 
-    .page-btn:hover { border-color: var(--red); color: var(--red); }
-    .page-btn.active { background: var(--red); border-color: var(--red); color: white; }
+    .page-btn:hover {
+      border-color: var(--red);
+      color: var(--red);
+    }
+
+    .page-btn.active {
+      background: var(--red);
+      border-color: var(--red);
+      color: white;
+    }
 
     .empty-state {
       text-align: center;
@@ -381,7 +578,11 @@
       color: #888;
     }
 
-    .empty-state .icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+    .empty-state .icon {
+      font-size: 2.5rem;
+      margin-bottom: 0.75rem;
+    }
+
     .article-detail-card {
       position: sticky;
       top: 1rem;
@@ -429,7 +630,9 @@
       font-size: 0.92rem;
     }
 
-    .article-detail-body p { white-space: pre-wrap; }
+    .article-detail-body p {
+      white-space: pre-wrap;
+    }
 
     .article-detail-actions {
       display: flex;
@@ -449,25 +652,70 @@
       font-size: 0.8rem;
     }
 
-    .run-time { font-family: var(--mono); color: #888; font-size: 0.72rem; }
-    .run-info { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+    .run-time {
+      font-family: var(--mono);
+      color: #888;
+      font-size: 0.72rem;
+    }
 
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #fff3; border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; }
+    .run-info {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid #fff3;
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
 
     @media (max-width: 1080px) {
-      .articles-layout { grid-template-columns: 1fr; }
-      .article-detail-card { position: static; }
+      .articles-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .article-detail-card {
+        position: static;
+      }
     }
 
     @media (max-width: 820px) {
-      header { padding: 0 1rem; }
-      .logo { font-size: 1.15rem; padding: 0.8rem 0; }
-      .header-status { display: none; }
-      .menu-btn { display: inline-flex; }
+      header {
+        padding: 0 1rem;
+      }
 
-      .main { grid-template-columns: 1fr; }
-      .content { padding: 1rem; }
+      .logo {
+        font-size: 1.15rem;
+        padding: 0.8rem 0;
+      }
+
+      .header-status {
+        display: none;
+      }
+
+      .menu-btn {
+        display: inline-flex;
+      }
+
+      .main {
+        grid-template-columns: 1fr;
+      }
+
+      .content {
+        padding: 1rem;
+      }
 
       aside {
         position: fixed;
@@ -481,874 +729,1066 @@
         overflow-y: auto;
       }
 
-      body.sidebar-open aside { transform: translateX(0); }
-      body.sidebar-open .sidebar-overlay { display: block; }
-      body.sidebar-open { overflow: hidden; }
+      body.sidebar-open aside {
+        transform: translateX(0);
+      }
 
-      .grid-3 { grid-template-columns: 1fr; }
-      .page-title { font-size: 1.25rem; flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+      body.sidebar-open .sidebar-overlay {
+        display: block;
+      }
 
-      .search-bar { flex-direction: column; }
-      .search-bar .input { width: 100%; }
-      .search-bar .btn { width: 100%; justify-content: center; }
+      body.sidebar-open {
+        overflow: hidden;
+      }
 
-      .cron-row { flex-wrap: wrap; }
+      .grid-3 {
+        grid-template-columns: 1fr;
+      }
+
+      .page-title {
+        font-size: 1.25rem;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+      }
+
+      .search-bar {
+        flex-direction: column;
+      }
+
+      .search-bar .input {
+        width: 100%;
+      }
+
+      .search-bar .btn {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .cron-row {
+        flex-wrap: wrap;
+      }
     }
 
     @media (max-width: 520px) {
-      .card { padding: 1rem; }
-      th, td { padding: 0.55rem 0.65rem; }
-      table { font-size: 0.78rem; }
-      .article-detail-title { font-size: 1.15rem; }
-      .article-detail-body { font-size: 0.88rem; }
-      .btn { padding: 0.6rem 0.9rem; }
-      .input { width: 100%; }
+      .card {
+        padding: 1rem;
+      }
+
+      th,
+      td {
+        padding: 0.55rem 0.65rem;
+      }
+
+      table {
+        font-size: 0.78rem;
+      }
+
+      .article-detail-title {
+        font-size: 1.15rem;
+      }
+
+      .article-detail-body {
+        font-size: 0.88rem;
+      }
+
+      .btn {
+        padding: 0.6rem 0.9rem;
+      }
+
+      .input {
+        width: 100%;
+      }
     }
   </style>
 </head>
+
 <body>
 
-<header>
-  <button class="menu-btn" id="menuBtn" onclick="toggleSidebar()" aria-label="Menu">☰</button>
-  <div class="logo">Brox <span>Scraper</span></div>
-  <div class="header-status">
-    <div class="pulse-dot idle" id="hdrDot"></div>
-    <span id="hdrStatus">Idle</span>
-  </div>
-</header>
-
-<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
-
-<div class="main">
-  <!-- Sidebar -->
-  <aside id="sidebar">
-    <div>
-      <div class="nav-label">Navigation</div>
-      <nav>
-        <a onclick="showPage('dashboard')" class="active" id="nav-dashboard">📊 Dashboard</a>
-        <a onclick="showPage('articles')" id="nav-articles">📰 Articles</a>
-        <a onclick="showPage('mobiles')" id="nav-mobiles">📱 Mobiles</a>
-        <a onclick="showPage('scraper')" id="nav-scraper">⚙️ Scraper</a>
-        <a onclick="showPage('cron')" id="nav-cron">⏰ Cron Jobs</a>
-        <a onclick="showPage('settings')" id="nav-settings">⚙️ Settings</a>
-        <a onclick="showPage('api')" id="nav-api">🔌 API Docs</a>
-      </nav>
+  <header>
+    <button class="menu-btn" id="menuBtn" onclick="toggleSidebar()" aria-label="Menu">☰</button>
+    <div class="logo">Brox <span>Scraper</span></div>
+    <div class="header-status">
+      <div class="pulse-dot idle" id="hdrDot"></div>
+      <span id="hdrStatus">Idle</span>
     </div>
+  </header>
 
-    <div>
-      <div class="nav-label">Cache Stats</div>
-      <div class="stat-pill" style="margin-bottom:0.5rem">
-        <div class="label">Cached Articles</div>
-        <div class="val red" id="sb-total">—</div>
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+  <div class="main">
+    <!-- Sidebar -->
+    <aside id="sidebar">
+      <div>
+        <div class="nav-label">Navigation</div>
+        <nav>
+          <a onclick="showPage('dashboard')" class="active" id="nav-dashboard">📊 Dashboard</a>
+          <a onclick="showPage('articles')" id="nav-articles">📰 Articles</a>
+          <a onclick="showPage('mobiles')" id="nav-mobiles">📱 Mobiles</a>
+          <a onclick="showPage('scraper')" id="nav-scraper">⚙️ Scraper</a>
+          <a onclick="showPage('cron')" id="nav-cron">⏰ Cron Jobs</a>
+          <a onclick="showPage('settings')" id="nav-settings">⚙️ Settings</a>
+          <a onclick="showPage('api')" id="nav-api">🔌 API Docs</a>
+        </nav>
       </div>
-      <div class="stat-pill" style="margin-bottom:0.5rem">
-        <div class="label">Cached Mobiles</div>
-        <div class="val" id="sb-mobiles">—</div>
-      </div>
-      <div class="stat-pill">
-        <div class="label">Total Runs</div>
-        <div class="val" id="sb-runs">—</div>
-      </div>
-    </div>
 
-    <div style="margin-top:auto">
-      <button class="btn btn-primary" style="width:100%" id="triggerBtn" onclick="triggerScrape()">
-        ▶ Scrape Now
-      </button>
-    </div>
-  </aside>
-
-  <!-- Content -->
-  <div class="content">
-
-    <!-- Dashboard -->
-    <div class="page active" id="page-dashboard">
-      <div class="page-title">Dashboard</div>
-
-      <div class="grid-3">
-        <div class="metric-card">
-          <div class="m-label">Total Cached</div>
-          <div class="m-val" id="d-total">—</div>
-          <div class="m-sub">articles in cache</div>
+      <div>
+        <div class="nav-label">Cache Stats</div>
+        <div class="stat-pill" style="margin-bottom:0.5rem">
+          <div class="label">Cached Articles</div>
+          <div class="val red" id="sb-total">—</div>
         </div>
-        <div class="metric-card">
-          <div class="m-label">Last Run</div>
-          <div class="m-val" style="font-size:1rem; padding-top:0.5rem" id="d-lastrun">Never</div>
-          <div class="m-sub" id="d-trigger">—</div>
+        <div class="stat-pill" style="margin-bottom:0.5rem">
+          <div class="label">Cached Mobiles</div>
+          <div class="val" id="sb-mobiles">—</div>
         </div>
-        <div class="metric-card">
-          <div class="m-label">Total Runs</div>
-          <div class="m-val" id="d-runs">0</div>
-          <div class="m-sub">since start</div>
+        <div class="stat-pill">
+          <div class="label">Total Runs</div>
+          <div class="val" id="sb-runs">—</div>
         </div>
       </div>
 
-      <div class="card">
-        <h3 style="font-size:0.85rem; margin-bottom:1rem; color:#666; letter-spacing:0.08em; text-transform:uppercase">Categories</h3>
-        <div id="d-cats" style="display:flex; flex-wrap:wrap; gap:0.5rem">
-          <span style="color:#aaa; font-size:0.82rem">Loading...</span>
-        </div>
+      <div style="margin-top:auto">
+        <button class="btn btn-primary" style="width:100%" id="triggerBtn" onclick="triggerScrape()">
+          ▶ Scrape Now
+        </button>
       </div>
+    </aside>
 
-      <div class="card">
-        <h3 style="font-size:0.85rem; margin-bottom:1rem; color:#666; letter-spacing:0.08em; text-transform:uppercase">Recent Runs</h3>
-        <div id="d-runs-list" class="runs-timeline"></div>
-      </div>
-    </div>
+    <!-- Content -->
+    <div class="content">
 
-    <!-- Articles -->
-    <div class="page" id="page-articles">
-      <div class="page-title">
-        Cached Articles
-        <a href="/api/cache/export" class="btn btn-ghost" download>⬇ Export JSON</a>
-      </div>
+      <!-- Dashboard -->
+      <div class="page active" id="page-dashboard">
+        <div class="page-title">Dashboard</div>
 
-      <div class="search-bar">
-        <input class="input" id="articleSearch" placeholder="Search titles..." oninput="searchArticles()" />
-        <input class="input" id="catFilter" placeholder="Category filter" oninput="searchArticles()" style="width:160px" />
-        <select class="input" id="articleSourceFilter" onchange="searchArticles()" style="width:170px">
-          <option value="">All sources</option>
-        </select>
-        <input class="input" id="articleLimitInput" type="number" min="1" max="200" value="15" oninput="searchArticles()" style="width:120px" placeholder="Limit" />
-      </div>
-
-      <div class="articles-layout">
-        <div class="card" style="padding:0; margin-bottom:0">
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Title</th>
-                  <th>Category</th>
-                  <th>Author</th>
-                  <th>Published</th>
-                  <th>Tags</th>
-                </tr>
-              </thead>
-              <tbody id="articlesBody"></tbody>
-            </table>
+        <div class="grid-3">
+          <div class="metric-card">
+            <div class="m-label">Total Cached</div>
+            <div class="m-val" id="d-total">—</div>
+            <div class="m-sub">articles in cache</div>
+          </div>
+          <div class="metric-card">
+            <div class="m-label">Last Run</div>
+            <div class="m-val" style="font-size:1rem; padding-top:0.5rem" id="d-lastrun">Never</div>
+            <div class="m-sub" id="d-trigger">—</div>
+          </div>
+          <div class="metric-card">
+            <div class="m-label">Total Runs</div>
+            <div class="m-val" id="d-runs">0</div>
+            <div class="m-sub">since start</div>
           </div>
         </div>
 
-        <div class="card article-detail-card">
-          <div id="articleDetailContent">
-            <div class="empty-state" style="padding:2rem 1rem">
-              <div class="icon">📰</div>
-              <div>একটি article select করলে full details এখানে দেখা যাবে।</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="pagination" id="pagination"></div>
-    </div>
-
-    <!-- Mobiles -->
-    <div class="page" id="page-mobiles">
-      <div class="page-title">
-        Cached Mobiles
-        <a href="/api/mobiles/export" class="btn btn-ghost" download>⬇ Export JSON</a>
-      </div>
-
-      <div class="search-bar">
-        <input class="input" id="mobileSearch" placeholder="Search mobiles..." oninput="searchMobiles()" />
-        <input class="input" id="mobileBrand" placeholder="Brand" oninput="searchMobiles()" style="width:160px" />
-        <input class="input" id="mobileStatus" placeholder="Status" oninput="searchMobiles()" style="width:140px" />
-        <select class="input" id="mobileSourceFilter" onchange="searchMobiles()" style="width:170px">
-          <option value="">All sources</option>
-        </select>
-        <input class="input" id="mobileLimitInput" type="number" min="1" max="200" value="15" oninput="searchMobiles()" style="width:120px" placeholder="Limit" />
-      </div>
-
-      <div class="articles-layout">
-        <div class="card" style="padding:0; margin-bottom:0">
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Model</th>
-                  <th>Brand</th>
-                  <th>Price</th>
-                  <th>Status</th>
-                  <th>Category</th>
-                </tr>
-              </thead>
-              <tbody id="mobilesBody"></tbody>
-            </table>
+        <div class="card">
+          <h3
+            style="font-size:0.85rem; margin-bottom:1rem; color:#666; letter-spacing:0.08em; text-transform:uppercase">
+            Categories</h3>
+          <div id="d-cats" style="display:flex; flex-wrap:wrap; gap:0.5rem">
+            <span style="color:#aaa; font-size:0.82rem">Loading...</span>
           </div>
         </div>
 
-        <div class="card article-detail-card">
-          <div id="mobileDetailContent">
-            <div class="empty-state" style="padding:2rem 1rem">
-              <div class="icon">📱</div>
-              <div>একটি mobile select করলে full details এখানে দেখা যাবে।</div>
-            </div>
-          </div>
+        <div class="card">
+          <h3
+            style="font-size:0.85rem; margin-bottom:1rem; color:#666; letter-spacing:0.08em; text-transform:uppercase">
+            Recent Runs</h3>
+          <div id="d-runs-list" class="runs-timeline"></div>
         </div>
       </div>
 
-      <div class="pagination" id="mobilesPagination"></div>
-    </div>
-
-    <!-- Scraper -->
-    <div class="page" id="page-scraper">
-      <div class="page-title">Scraper Control</div>
-
-      <div class="card" style="display:flex; gap:1rem; align-items:center; justify-content:space-between">
-        <div>
-          <div style="font-weight:600; margin-bottom:0.25rem">Manual Trigger</div>
-          <div style="font-size:0.82rem; color:#888">Immediately scrape the selected source and save to cache</div>
+      <!-- Articles -->
+      <div class="page" id="page-articles">
+        <div class="page-title">
+          Cached Articles
+          <a href="/api/cache/export" class="btn btn-ghost" download>⬇ Export JSON</a>
         </div>
-        <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap; justify-content:flex-end">
-          <select class="input" id="sourceSelect" style="width:190px" onchange="setSelectedSource(this.value)">
-            <option value="">Loading sources...</option>
+
+        <div class="search-bar">
+          <input class="input" id="articleSearch" placeholder="Search titles..." oninput="searchArticles()" />
+          <input class="input" id="catFilter" placeholder="Category filter" oninput="searchArticles()"
+            style="width:160px" />
+          <select class="input" id="articleSourceFilter" onchange="searchArticles()" style="width:170px">
+            <option value="">All sources</option>
           </select>
-          <button class="btn btn-primary" id="scrapeBtn" onclick="triggerScrape()" style="white-space:nowrap">
-            ▶ Start Scrape
-          </button>
-        </div>
-      </div>
-
-      <div class="card" style="display:flex; gap:1rem; align-items:center; justify-content:space-between">
-        <div>
-          <div style="font-weight:600; margin-bottom:0.25rem; color:#c00">Clear Cache</div>
-          <div style="font-size:0.82rem; color:#888">Delete all cached articles and mobiles (irreversible)</div>
-        </div>
-        <button class="btn btn-danger" onclick="clearCacheConfirm()">🗑 Clear Cache</button>
-      </div>
-
-      <div class="card">
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem">
-          <h3 style="font-size:0.85rem; color:#666; letter-spacing:0.08em; text-transform:uppercase">Live Log</h3>
-          <span id="scrapeStatusBadge" class="tag">Idle</span>
-        </div>
-        <div class="log-box" id="logBox">
-          <div style="color:#555">Waiting for scrape run...</div>
-        </div>
-      </div>
-
-      <div class="card" id="lastResultCard" style="display:none">
-        <h3 style="font-size:0.85rem; margin-bottom:0.75rem; color:#666; letter-spacing:0.08em; text-transform:uppercase">Last Result</h3>
-        <div id="lastResultContent"></div>
-      </div>
-    </div>
-
-    <!-- Cron -->
-    <div class="page" id="page-cron">
-      <div class="page-title">Cron Jobs</div>
-
-      <div class="card" id="activeJobs">
-        <div style="font-weight:600; margin-bottom:0.75rem">Active Jobs</div>
-        <div id="cronList"><span style="color:#aaa; font-size:0.82rem">Loading...</span></div>
-      </div>
-
-      <div class="card">
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem">
-          <div style="font-weight:600">Cron Logs</div>
-          <div style="display:flex; gap:0.5rem">
-            <button class="btn btn-ghost" style="padding:0.3rem 0.6rem; font-size:0.75rem" onclick="loadCronLogs()">Refresh</button>
-            <button class="btn btn-danger" style="padding:0.3rem 0.6rem; font-size:0.75rem" onclick="clearCronLogs()">Clear</button>
-          </div>
-        </div>
-        <div id="cronLogBox" class="log-box" style="height:220px"><span style="color:#888">Loading cron logs...</span></div>
-      </div>
-
-      <div class="card">
-        <div style="font-weight:600; margin-bottom:1rem">Add New Cron Job</div>
-        <div style="display:flex; gap:0.75rem; flex-wrap:wrap">
-          <div>
-            <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">SCHEDULE (cron syntax)</div>
-            <input class="input" id="cronSchedule" placeholder="0 * * * *" style="width:180px" />
-          </div>
-          <div>
-            <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">JOB NAME</div>
-            <input class="input" id="cronName" placeholder="my-job" style="width:140px" />
-          </div>
-          <div style="align-self:flex-end">
-            <button class="btn btn-primary" onclick="addCron()">+ Add</button>
-          </div>
-        </div>
-        <div style="margin-top:1rem; font-size:0.75rem; color:#888">
-          <strong>Presets:</strong>
-          <button class="btn btn-ghost" style="padding:0.25rem 0.5rem; font-size:0.72rem; margin-left:0.5rem" onclick="document.getElementById('cronSchedule').value='0 * * * *'">Every hour</button>
-          <button class="btn btn-ghost" style="padding:0.25rem 0.5rem; font-size:0.72rem; margin-left:0.25rem" onclick="document.getElementById('cronSchedule').value='*/30 * * * *'">Every 30 min</button>
-          <button class="btn btn-ghost" style="padding:0.25rem 0.5rem; font-size:0.72rem; margin-left:0.25rem" onclick="document.getElementById('cronSchedule').value='0 6 * * *'">Daily 6AM</button>
-          <button class="btn btn-ghost" style="padding:0.25rem 0.5rem; font-size:0.72rem; margin-left:0.25rem" onclick="document.getElementById('cronSchedule').value='0 */6 * * *'">Every 6h</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Settings -->
-    <div class="page" id="page-settings">
-      <div class="page-title">Settings</div>
-
-      <div class="card">
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem">
-          <div style="font-weight:700">Main Settings</div>
-          <span id="mainSettingsStatus" class="tag">Not saved</span>
+          <input class="input" id="articleLimitInput" type="number" min="1" max="200" value="15"
+            oninput="searchArticles()" style="width:120px" placeholder="Limit" />
         </div>
 
-        <div style="display:flex; gap:0.75rem; flex-wrap:wrap">
-          <div style="flex:1; min-width:220px">
-            <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">SCRAPE MAX ITEMS</div>
-            <select class="input" id="setScrapeMaxItems" style="width:100%">
-              <option value="3">3</option>
-              <option value="5">5</option>
-              <option value="10">10</option>
-              <option value="20">20</option>
-              <option value="0">Unlimited</option>
-            </select>
-            <div style="font-size:0.74rem; color:#888; margin-top:0.4rem">Per source run (latest/page listing).</div>
-          </div>
-
-          <div style="flex:1; min-width:220px">
-            <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">SCRAPE DELAY (MS)</div>
-            <input class="input" id="setScrapeDelayMs" type="number" min="0" step="50" placeholder="300" style="width:100%" />
-            <div style="font-size:0.74rem; color:#888; margin-top:0.4rem">Delay between item requests.</div>
-          </div>
-
-          <div style="flex:1; min-width:220px">
-            <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">PUSH ENABLED</div>
-            <label style="display:flex; align-items:center; gap:0.5rem; font-family:var(--mono); font-size:0.82rem">
-              <input type="checkbox" id="setPushEnabled" />
-              Enable POST delivery after scrape
-            </label>
-            <label style="display:flex; align-items:center; gap:0.5rem; font-family:var(--mono); font-size:0.78rem; margin-top:0.5rem">
-              <input type="checkbox" id="setPushArticlesEnabled" />
-              Enable article push
-            </label>
-            <label style="display:flex; align-items:center; gap:0.5rem; font-family:var(--mono); font-size:0.78rem; margin-top:0.35rem">
-              <input type="checkbox" id="setPushMobilesEnabled" />
-              Enable mobile push
-            </label>
-          </div>
-        </div>
-
-        <div style="display:flex; gap:0.75rem; flex-wrap:wrap; margin-top:1rem">
-          <div style="flex:1; min-width:260px">
-            <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">ARTICLES PUSH URL</div>
-            <input class="input" id="setPushArticlesEndpointUrl" placeholder="https://example.com/api/articles-push" style="width:100%" />
-          </div>
-          <div style="flex:1; min-width:260px">
-            <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">MOBILES PUSH URL</div>
-            <input class="input" id="setPushMobilesEndpointUrl" placeholder="https://example.com/api/mobiles-push" style="width:100%" />
-          </div>
-        </div>
-
-        <div style="display:flex; gap:0.75rem; flex-wrap:wrap; margin-top:1rem">
-          <div style="flex:1; min-width:260px">
-            <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">LEGACY/FALLBACK PUSH URL</div>
-            <input class="input" id="setPushEndpointUrl" placeholder="https://broxlab.online/api/autocontent" style="width:100%" />
-          </div>
-          <div style="flex:1; min-width:260px">
-            <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">PUSH HEADERS (JSON)</div>
-            <textarea class="input" id="setPushEndpointHeadersJson" rows="3" placeholder='{\"Authorization\":\"Bearer ...\"}' style="width:100%; resize:vertical"></textarea>
-          </div>
-        </div>
-
-        <div style="display:flex; gap:0.75rem; flex-wrap:wrap; margin-top:1rem">
-          <div style="flex:1; min-width:220px">
-            <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">CACHE MAX ARTICLES</div>
-            <input class="input" id="setCacheMaxArticles" type="number" min="50" step="50" placeholder="500" style="width:100%" />
-          </div>
-          <div style="flex:1; min-width:220px">
-            <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">CACHE MAX MOBILES</div>
-            <input class="input" id="setCacheMaxMobiles" type="number" min="50" step="50" placeholder="500" style="width:100%" />
-          </div>
-          <div style="flex:1; min-width:220px">
-            <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">CACHE AUTO CLEAR</div>
-            <label style="display:flex; align-items:center; gap:0.5rem; font-family:var(--mono); font-size:0.82rem">
-              <input type="checkbox" id="setCacheAutoClearEnabled" />
-              Enable retention policy
-            </label>
-          </div>
-          <div style="flex:1; min-width:220px">
-            <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">CACHE RETENTION (HOURS)</div>
-            <input class="input" id="setCacheRetentionHours" type="number" min="0" step="1" placeholder="0" style="width:100%" />
-            <div style="font-size:0.74rem; color:#888; margin-top:0.4rem">0 = disabled.</div>
-          </div>
-        </div>
-
-        <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:1rem; justify-content:flex-end">
-          <button class="btn btn-ghost" onclick="loadMainSettings()">Reload</button>
-          <button class="btn btn-primary" onclick="saveMainSettings()">Save Settings</button>
-        </div>
-      </div>
-
-      <div class="card" style="font-size:0.82rem; color:#666; line-height:1.7">
-        <div style="font-weight:700; color:#333; margin-bottom:0.35rem">Notes</div>
-        <div>- These settings are saved to <span style="font-family:var(--mono)">cache/settings.json</span>.</div>
-        <div>- Cache retention runs automatically (every ~10 minutes) when enabled.</div>
-      </div>
-
-      <div class="card">
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem">
-          <div style="font-weight:700">Push Logs</div>
-          <div style="display:flex; gap:0.5rem">
-            <button class="btn btn-ghost" style="padding:0.3rem 0.6rem; font-size:0.75rem" onclick="loadPushLogs()">Refresh</button>
-            <button class="btn btn-danger" style="padding:0.3rem 0.6rem; font-size:0.75rem" onclick="clearPushLogs()">Clear</button>
-          </div>
-        </div>
-        <div id="pushLogBox" class="log-box" style="height:220px"><span style="color:#888">Loading push logs...</span></div>
-      </div>
-    </div>
-
-    <!-- API Docs -->
-    <div class="page" id="page-api">
-      <div class="page-title">API Reference</div>
-
-      <div class="card">
-        <div style="font-family:var(--mono); font-size:0.82rem; line-height:2">
-          <div style="margin-bottom:1rem; color:#888; font-size:0.78rem">Base URL: <strong style="color:var(--ink)">http://localhost:9999</strong> <span style="color:#aaa">(local)</span> <span style="color:#bbb">·</span> <strong style="color:var(--ink)">https://scrap.govinpqms.online</strong> <span style="color:#aaa">(hosted)</span></div>
-
-          <div style="margin-bottom:1.25rem">
-            <span class="tag green">GET</span> <strong>/api/status</strong><br/>
-            <span style="color:#888; font-size:0.78rem">Current scraper status + cache stats + active cron jobs</span>
-          </div>
-
-          <div style="margin-bottom:1.25rem">
-            <span class="tag red">POST</span> <strong>/api/scrape</strong><br/>
-            <span style="color:#888; font-size:0.78rem">Manually trigger a scrape (runs in background)</span>
-          </div>
-
-          <div style="margin-bottom:1.25rem">
-            <span class="tag green">GET</span> <strong>/api/articles?page=1&limit=20&category=&search=</strong><br/>
-            <span style="color:#888; font-size:0.78rem">Paginated cached articles with optional filters</span>
-          </div>
-
-          <div style="margin-bottom:1.25rem">
-            <span class="tag green">GET</span> <strong>/api/mobiles?page=1&limit=20&brand=&status=&search=</strong><br/>
-            <span style="color:#888; font-size:0.78rem">Paginated cached mobiles with optional filters</span>
-          </div>
-
-          <div style="margin-bottom:1.25rem">
-            <span class="tag green">GET</span> <strong>/api/articles/search?url=https://...</strong><br/>
-            <span style="color:#888; font-size:0.78rem">Find a specific article by its URL</span>
-          </div>
-
-          <div style="margin-bottom:1.25rem">
-            <span class="tag green">GET</span> <strong>/api/mobiles/search?url=https://...</strong><br/>
-            <span style="color:#888; font-size:0.78rem">Find a specific mobile by its URL</span>
-          </div>
-
-          <div style="margin-bottom:1.25rem">
-            <span class="tag green">GET</span> <strong>/api/stats</strong><br/>
-            <span style="color:#888; font-size:0.78rem">Detailed statistics and run history</span>
-          </div>
-
-          <div style="margin-bottom:1.25rem">
-            <span class="tag green">GET</span> <strong>/api/cache/export</strong><br/>
-            <span style="color:#888; font-size:0.78rem">Download full cache as JSON file</span>
-          </div>
-
-          <div style="margin-bottom:1.25rem">
-            <span class="tag" style="background:#fdecea;color:#c00">DELETE</span> <strong>/api/cache</strong><br/>
-            <span style="color:#888; font-size:0.78rem">Clear all cached articles</span>
-          </div>
-
-          <div style="margin-bottom:1.25rem">
-            <span class="tag red">POST</span> <strong>/api/cron</strong> <span style="color:#888">body: { action, schedule, name }</span><br/>
-            <span style="color:#888; font-size:0.78rem">Manage cron jobs — action: start | stop | list</span>
-          </div>
-
-          <div>
-            <span class="tag green">GET</span> <strong>/api/scrape/log</strong><br/>
-            <span style="color:#888; font-size:0.78rem">Get live scrape log entries</span>
-          </div>
-
-          <div style="margin-top:1.25rem">
-            <span class="tag green">GET</span> <strong>/api/push/logs?limit=100</strong><br/>
-            <span style="color:#888; font-size:0.78rem">Read push delivery logs (articles/mobiles, success/failure)</span>
-          </div>
-
-          <div style="margin-top:1.25rem; padding-top:1.25rem; border-top:1px solid #eee">
-            <div style="font-weight:700; color:#333; margin-bottom:0.6rem">Settings + Delivery</div>
-            <div style="margin-bottom:1.1rem">
-              <span class="tag green">GET</span> <strong>/api/settings</strong><br/>
-              <span style="color:#888; font-size:0.78rem">Read API settings (push endpoint + headers)</span>
+        <div class="articles-layout">
+          <div class="card" style="padding:0; margin-bottom:0">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Title</th>
+                    <th>Category</th>
+                    <th>Author</th>
+                    <th>Published</th>
+                    <th>Tags</th>
+                  </tr>
+                </thead>
+                <tbody id="articlesBody"></tbody>
+              </table>
             </div>
-            <div style="margin-bottom:1.1rem">
-              <span class="tag red">POST</span> <strong>/api/settings</strong><br/>
-              <span style="color:#888; font-size:0.78rem">Update settings (pushEnabled, pushEndpointUrl, pushEndpointHeadersJson, scrapeMaxItems, scrapeDelayMs, cacheRetentionHours, cacheAutoClearEnabled, cacheMaxArticles, cacheMaxMobiles)</span>
+          </div>
+
+          <div class="card article-detail-card">
+            <div id="articleDetailContent">
+              <div class="empty-state" style="padding:2rem 1rem">
+                <div class="icon">📰</div>
+                <div>একটি article select করলে full details এখানে দেখা যাবে।</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="pagination" id="pagination"></div>
+      </div>
+
+      <!-- Mobiles -->
+      <div class="page" id="page-mobiles">
+        <div class="page-title">
+          Cached Mobiles
+          <a href="/api/mobiles/export" class="btn btn-ghost" download>⬇ Export JSON</a>
+        </div>
+
+        <div class="search-bar">
+          <input class="input" id="mobileSearch" placeholder="Search mobiles..." oninput="searchMobiles()" />
+          <input class="input" id="mobileBrand" placeholder="Brand" oninput="searchMobiles()" style="width:160px" />
+          <input class="input" id="mobileStatus" placeholder="Status" oninput="searchMobiles()" style="width:140px" />
+          <select class="input" id="mobileSourceFilter" onchange="searchMobiles()" style="width:170px">
+            <option value="">All sources</option>
+          </select>
+          <input class="input" id="mobileLimitInput" type="number" min="1" max="200" value="15"
+            oninput="searchMobiles()" style="width:120px" placeholder="Limit" />
+        </div>
+
+        <div class="articles-layout">
+          <div class="card" style="padding:0; margin-bottom:0">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Model</th>
+                    <th>Brand</th>
+                    <th>Price</th>
+                    <th>Status</th>
+                    <th>Category</th>
+                  </tr>
+                </thead>
+                <tbody id="mobilesBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card article-detail-card">
+            <div id="mobileDetailContent">
+              <div class="empty-state" style="padding:2rem 1rem">
+                <div class="icon">📱</div>
+                <div>একটি mobile select করলে full details এখানে দেখা যাবে।</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="pagination" id="mobilesPagination"></div>
+      </div>
+
+      <!-- Scraper -->
+      <div class="page" id="page-scraper">
+        <div class="page-title">Scraper Control</div>
+
+        <div class="card" style="display:flex; gap:1rem; align-items:center; justify-content:space-between">
+          <div>
+            <div style="font-weight:600; margin-bottom:0.25rem">Manual Trigger</div>
+            <div style="font-size:0.82rem; color:#888">Immediately scrape the selected source and save to cache</div>
+          </div>
+          <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap; justify-content:flex-end">
+            <select class="input" id="sourceSelect" style="width:190px" onchange="setSelectedSource(this.value)">
+              <option value="">Loading sources...</option>
+            </select>
+            <button class="btn btn-primary" id="scrapeBtn" onclick="triggerScrape()" style="white-space:nowrap">
+              ▶ Start Scrape
+            </button>
+          </div>
+        </div>
+
+        <div class="card" style="display:flex; gap:1rem; align-items:center; justify-content:space-between">
+          <div>
+            <div style="font-weight:600; margin-bottom:0.25rem; color:#c00">Clear Cache</div>
+            <div style="font-size:0.82rem; color:#888">Delete all cached articles and mobiles (irreversible)</div>
+          </div>
+          <button class="btn btn-danger" onclick="clearCacheConfirm()">🗑 Clear Cache</button>
+        </div>
+
+        <div class="card">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem">
+            <h3 style="font-size:0.85rem; color:#666; letter-spacing:0.08em; text-transform:uppercase">Live Log</h3>
+            <span id="scrapeStatusBadge" class="tag">Idle</span>
+          </div>
+          <div class="log-box" id="logBox">
+            <div style="color:#555">Waiting for scrape run...</div>
+          </div>
+        </div>
+
+        <div class="card" id="lastResultCard" style="display:none">
+          <h3
+            style="font-size:0.85rem; margin-bottom:0.75rem; color:#666; letter-spacing:0.08em; text-transform:uppercase">
+            Last Result</h3>
+          <div id="lastResultContent"></div>
+        </div>
+
+        <div class="card" id="scraperErrorsCard" style="display:none">
+          <h3
+            style="font-size:0.85rem; margin-bottom:0.75rem; color:#666; letter-spacing:0.08em; text-transform:uppercase">
+            Errors (Last Run)</h3>
+          <div id="scraperErrorsContent"></div>
+        </div>
+      </div>
+
+      <!-- Cron -->
+      <div class="page" id="page-cron">
+        <div class="page-title">Cron Jobs</div>
+
+        <div class="card" id="activeJobs">
+          <div style="font-weight:600; margin-bottom:0.75rem">Active Jobs</div>
+          <div id="cronList"><span style="color:#aaa; font-size:0.82rem">Loading...</span></div>
+        </div>
+
+        <div class="card">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem">
+            <div style="font-weight:600">Cron Logs</div>
+            <div style="display:flex; gap:0.5rem">
+              <button class="btn btn-ghost" style="padding:0.3rem 0.6rem; font-size:0.75rem"
+                onclick="loadCronLogs()">Refresh</button>
+              <button class="btn btn-danger" style="padding:0.3rem 0.6rem; font-size:0.75rem"
+                onclick="clearCronLogs()">Clear</button>
+            </div>
+          </div>
+          <div id="cronLogBox" class="log-box" style="height:220px"><span style="color:#888">Loading cron logs...</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="font-weight:600; margin-bottom:1rem">Add New Cron Job</div>
+          <div style="display:flex; gap:0.75rem; flex-wrap:wrap">
+            <div>
+              <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">SCHEDULE (cron
+                syntax)</div>
+              <input class="input" id="cronSchedule" placeholder="0 * * * *" style="width:180px" />
             </div>
             <div>
-              <span style="color:#888; font-size:0.78rem">After each scrape run (manual/cron), items are saved to JSON cache and also stored in a local SQLite DB. If a push endpoint is configured, newly added items are POSTed to it as: { source, trigger, pushedAt, count, articles: [...] }.</span>
+              <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">JOB NAME</div>
+              <input class="input" id="cronName" placeholder="my-job" style="width:140px" />
+            </div>
+            <div style="align-self:flex-end">
+              <button class="btn btn-primary" onclick="addCron()">+ Add</button>
+            </div>
+          </div>
+          <div style="margin-top:1rem; font-size:0.75rem; color:#888">
+            <strong>Presets:</strong>
+            <button class="btn btn-ghost" style="padding:0.25rem 0.5rem; font-size:0.72rem; margin-left:0.5rem"
+              onclick="document.getElementById('cronSchedule').value='0 * * * *'">Every hour</button>
+            <button class="btn btn-ghost" style="padding:0.25rem 0.5rem; font-size:0.72rem; margin-left:0.25rem"
+              onclick="document.getElementById('cronSchedule').value='*/30 * * * *'">Every 30 min</button>
+            <button class="btn btn-ghost" style="padding:0.25rem 0.5rem; font-size:0.72rem; margin-left:0.25rem"
+              onclick="document.getElementById('cronSchedule').value='0 6 * * *'">Daily 6AM</button>
+            <button class="btn btn-ghost" style="padding:0.25rem 0.5rem; font-size:0.72rem; margin-left:0.25rem"
+              onclick="document.getElementById('cronSchedule').value='0 */6 * * *'">Every 6h</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Settings -->
+      <div class="page" id="page-settings">
+        <div class="page-title">Settings</div>
+
+        <div class="card">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem">
+            <div style="font-weight:700">Main Settings</div>
+            <span id="mainSettingsStatus" class="tag">Not saved</span>
+          </div>
+
+          <div style="display:flex; gap:0.75rem; flex-wrap:wrap">
+            <div style="flex:1; min-width:220px">
+              <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">SCRAPE MAX ITEMS
+              </div>
+              <select class="input" id="setScrapeMaxItems" style="width:100%">
+                <option value="3">3</option>
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="0">Unlimited</option>
+              </select>
+              <div style="font-size:0.74rem; color:#888; margin-top:0.4rem">Per source run (latest/page listing).</div>
+            </div>
+
+            <div style="flex:1; min-width:220px">
+              <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">SCRAPE DELAY
+                (MS)</div>
+              <input class="input" id="setScrapeDelayMs" type="number" min="0" step="50" placeholder="300"
+                style="width:100%" />
+              <div style="font-size:0.74rem; color:#888; margin-top:0.4rem">Delay between item requests.</div>
+            </div>
+
+            <div style="flex:1; min-width:220px">
+              <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">REQUEST MIN
+                INTERVAL (MS)</div>
+              <input class="input" id="setScrapeRequestMinIntervalMs" type="number" min="0" max="5000" step="10"
+                placeholder="150" style="width:100%" />
+              <div style="font-size:0.74rem; color:#888; margin-top:0.4rem">Global pacing across all curl requests.</div>
+            </div>
+
+            <div style="flex:1; min-width:220px">
+              <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">PUSH ENABLED
+              </div>
+              <label style="display:flex; align-items:center; gap:0.5rem; font-family:var(--mono); font-size:0.82rem">
+                <input type="checkbox" id="setPushEnabled" />
+                Enable POST delivery after scrape
+              </label>
+              <label
+                style="display:flex; align-items:center; gap:0.5rem; font-family:var(--mono); font-size:0.78rem; margin-top:0.5rem">
+                <input type="checkbox" id="setPushArticlesEnabled" />
+                Enable article push
+              </label>
+              <label
+                style="display:flex; align-items:center; gap:0.5rem; font-family:var(--mono); font-size:0.78rem; margin-top:0.35rem">
+                <input type="checkbox" id="setPushMobilesEnabled" />
+                Enable mobile push
+              </label>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:0.75rem; flex-wrap:wrap; margin-top:1rem">
+            <div style="flex:1; min-width:260px">
+              <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">ARTICLES PUSH
+                URL</div>
+              <input class="input" id="setPushArticlesEndpointUrl" placeholder="https://example.com/api/articles-push"
+                style="width:100%" />
+            </div>
+            <div style="flex:1; min-width:260px">
+              <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">MOBILES PUSH URL
+              </div>
+              <input class="input" id="setPushMobilesEndpointUrl" placeholder="https://example.com/api/mobiles-push"
+                style="width:100%" />
+            </div>
+          </div>
+
+          <div style="display:flex; gap:0.75rem; flex-wrap:wrap; margin-top:1rem">
+            <div style="flex:1; min-width:260px">
+              <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">LEGACY/FALLBACK
+                PUSH URL</div>
+              <input class="input" id="setPushEndpointUrl" placeholder="https://broxlab.online/api/autocontent"
+                style="width:100%" />
+            </div>
+            <div style="flex:1; min-width:260px">
+              <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">PUSH HEADERS
+                (JSON)</div>
+              <input type="text" class="input" id="setPushEndpointHeadersJson"
+                placeholder='{\"Authorization\":\"Bearer ...\"}' style="width:100%" />
+            </div>
+          </div>
+
+          <div style="display:flex; gap:0.75rem; flex-wrap:wrap; margin-top:1rem">
+            <div style="flex:1; min-width:220px">
+              <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">CACHE MAX
+                ARTICLES</div>
+              <input class="input" id="setCacheMaxArticles" type="number" min="50" step="50" placeholder="500"
+                style="width:100%" />
+            </div>
+            <div style="flex:1; min-width:220px">
+              <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">CACHE MAX
+                MOBILES</div>
+              <input class="input" id="setCacheMaxMobiles" type="number" min="50" step="50" placeholder="500"
+                style="width:100%" />
+            </div>
+            <div style="flex:1; min-width:220px">
+              <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">CACHE AUTO CLEAR
+              </div>
+              <label style="display:flex; align-items:center; gap:0.5rem; font-family:var(--mono); font-size:0.82rem">
+                <input type="checkbox" id="setCacheAutoClearEnabled" />
+                Enable retention policy
+              </label>
+            </div>
+            <div style="flex:1; min-width:220px">
+              <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">CACHE RETENTION
+                (HOURS)</div>
+              <input class="input" id="setCacheRetentionHours" type="number" min="0" step="1" placeholder="0"
+                style="width:100%" />
+              <div style="font-size:0.74rem; color:#888; margin-top:0.4rem">0 = disabled.</div>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:1rem; justify-content:flex-end">
+            <button class="btn btn-ghost" onclick="loadMainSettings()">Reload</button>
+            <button class="btn btn-primary" onclick="saveMainSettings()">Save Settings</button>
+          </div>
+        </div>
+
+        <div class="card" style="font-size:0.82rem; color:#666; line-height:1.7">
+          <div style="font-weight:700; color:#333; margin-bottom:0.35rem">Notes</div>
+          <div>- These settings are saved to <span style="font-family:var(--mono)">cache/settings.json</span> and the curl request pacing env.</div>
+          <div>- Cache retention runs automatically (every ~10 minutes) when enabled.</div>
+        </div>
+
+        <div class="card">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem">
+            <div style="font-weight:700">Manual Push</div>
+            <div style="display:flex; gap:0.5rem">
+              <button class="btn btn-primary" style="padding:0.5rem 1rem; font-size:0.75rem" id="manualPushArticlesBtn"
+                onclick="manualPushArticles()">Push Articles</button>
+              <button class="btn btn-primary" style="padding:0.5rem 1rem; font-size:0.75rem" id="manualPushMobilesBtn"
+                onclick="manualPushMobiles()">Push Mobiles</button>
+            </div>
+          </div>
+          <div style="font-size:0.74rem; color:#888; line-height:1.6">
+            <div>• Click <strong>Push Articles</strong> to send all cached articles to the configured endpoint.</div>
+            <div>• Click <strong>Push Mobiles</strong> to send all cached mobiles to the configured endpoint.</div>
+            <div>• Check the Push Logs below to see delivery results.</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem">
+            <div style="font-weight:700">Push Logs</div>
+            <div style="display:flex; gap:0.5rem">
+              <button class="btn btn-ghost" style="padding:0.3rem 0.6rem; font-size:0.75rem"
+                onclick="loadPushLogs()">Refresh</button>
+              <button class="btn btn-danger" style="padding:0.3rem 0.6rem; font-size:0.75rem"
+                onclick="clearPushLogs()">Clear</button>
+            </div>
+          </div>
+          <div id="pushLogBox" class="log-box" style="height:220px"><span style="color:#888">Loading push logs...</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- API Docs -->
+      <div class="page" id="page-api">
+        <div class="page-title">API Reference</div>
+
+        <div class="card">
+          <div style="font-family:var(--mono); font-size:0.82rem; line-height:2">
+            <div style="margin-bottom:1rem; color:#888; font-size:0.78rem">Base URL: <strong
+                style="color:var(--ink)">http://localhost:9999</strong> <span style="color:#aaa">(local)</span> <span
+                style="color:#bbb">·</span> <strong style="color:var(--ink)">https://scrap.govinpqms.online</strong>
+              <span style="color:#aaa">(hosted)</span>
+            </div>
+
+            <div style="margin-bottom:1.25rem">
+              <span class="tag green">GET</span> <strong>/api/status</strong><br />
+              <span style="color:#888; font-size:0.78rem">Current scraper status + cache stats + active cron jobs</span>
+            </div>
+
+            <div style="margin-bottom:1.25rem">
+              <span class="tag red">POST</span> <strong>/api/scrape</strong><br />
+              <span style="color:#888; font-size:0.78rem">Manually trigger a scrape (runs in background)</span>
+            </div>
+
+            <div style="margin-bottom:1.25rem">
+              <span class="tag green">GET</span> <strong>/api/articles?page=1&limit=20&category=&search=</strong><br />
+              <span style="color:#888; font-size:0.78rem">Paginated cached articles with optional filters</span>
+            </div>
+
+            <div style="margin-bottom:1.25rem">
+              <span class="tag green">GET</span>
+              <strong>/api/mobiles?page=1&limit=20&brand=&status=&search=</strong><br />
+              <span style="color:#888; font-size:0.78rem">Paginated cached mobiles with optional filters</span>
+            </div>
+
+            <div style="margin-bottom:1.25rem">
+              <span class="tag green">GET</span> <strong>/api/articles/search?url=https://...</strong><br />
+              <span style="color:#888; font-size:0.78rem">Find a specific article by its URL</span>
+            </div>
+
+            <div style="margin-bottom:1.25rem">
+              <span class="tag green">GET</span> <strong>/api/mobiles/search?url=https://...</strong><br />
+              <span style="color:#888; font-size:0.78rem">Find a specific mobile by its URL</span>
+            </div>
+
+            <div style="margin-bottom:1.25rem">
+              <span class="tag green">GET</span> <strong>/api/stats</strong><br />
+              <span style="color:#888; font-size:0.78rem">Detailed statistics and run history</span>
+            </div>
+
+            <div style="margin-bottom:1.25rem">
+              <span class="tag green">GET</span> <strong>/api/cache/export</strong><br />
+              <span style="color:#888; font-size:0.78rem">Download full cache as JSON file</span>
+            </div>
+
+            <div style="margin-bottom:1.25rem">
+              <span class="tag" style="background:#fdecea;color:#c00">DELETE</span> <strong>/api/cache</strong><br />
+              <span style="color:#888; font-size:0.78rem">Clear all cached articles</span>
+            </div>
+
+            <div style="margin-bottom:1.25rem">
+              <span class="tag red">POST</span> <strong>/api/cron</strong> <span style="color:#888">body: { action,
+                schedule, name }</span><br />
+              <span style="color:#888; font-size:0.78rem">Manage cron jobs — action: start | stop | list</span>
+            </div>
+
+            <div>
+              <span class="tag green">GET</span> <strong>/api/scrape/log</strong><br />
+              <span style="color:#888; font-size:0.78rem">Get live scrape log entries</span>
+            </div>
+
+            <div style="margin-top:1.25rem">
+              <span class="tag green">GET</span> <strong>/api/push/logs?limit=100</strong><br />
+              <span style="color:#888; font-size:0.78rem">Read push delivery logs (articles/mobiles,
+                success/failure)</span>
+            </div>
+
+            <div style="margin-top:1.25rem; padding-top:1.25rem; border-top:1px solid #eee">
+              <div style="font-weight:700; color:#333; margin-bottom:0.6rem">Settings + Delivery</div>
+              <div style="margin-bottom:1.1rem">
+                <span class="tag green">GET</span> <strong>/api/settings</strong><br />
+                <span style="color:#888; font-size:0.78rem">Read API settings (push endpoint + headers)</span>
+              </div>
+              <div style="margin-bottom:1.1rem">
+                <span class="tag red">POST</span> <strong>/api/settings</strong><br />
+                <span style="color:#888; font-size:0.78rem">Update settings (pushEnabled, pushEndpointUrl,
+                  pushEndpointHeadersJson, scrapeMaxItems, scrapeDelayMs, cacheRetentionHours, cacheAutoClearEnabled,
+                  cacheMaxArticles, cacheMaxMobiles)</span>
+              </div>
+              <div>
+                <span style="color:#888; font-size:0.78rem">After each scrape run (manual/cron), items are saved to JSON
+                  cache and also stored in a local SQLite DB. If a push endpoint is configured, newly added items are
+                  POSTed to it as: { contentType, source, trigger, pushedAt, count, items: [...], articles/mobiles: [...] }.</span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div class="card">
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem">
-          <div style="font-weight:700">API Settings</div>
-          <span id="apiSettingsStatus" class="tag">Not saved</span>
+        <div class="card">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem">
+            <div style="font-weight:700">API Settings</div>
+            <span id="apiSettingsStatus" class="tag">Not saved</span>
+          </div>
+
+          <div style="display:flex; gap:0.75rem; flex-wrap:wrap">
+            <div style="flex:1; min-width:260px">
+              <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">ARTICLES PUSH
+                URL</div>
+              <input class="input" id="pushArticlesEndpointUrl" placeholder="https://example.com/api/articles-push" />
+              <div style="font-size:0.74rem; color:#888; margin-top:0.4rem">Set empty to disable article POST.</div>
+            </div>
+            <div style="flex:1; min-width:260px">
+              <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">MOBILES PUSH URL
+              </div>
+              <input class="input" id="pushMobilesEndpointUrl" placeholder="https://example.com/api/mobiles-push" />
+              <div style="font-size:0.74rem; color:#888; margin-top:0.4rem">Set empty to disable mobile POST.</div>
+            </div>
+            <div style="flex:1; min-width:260px">
+              <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">PUSH HEADERS
+                (JSON)</div>
+              <input type="text" class="input" id="pushEndpointHeadersJson"
+                placeholder='{\"Authorization\":\"Bearer ...\"}' style="width:100%" />
+            </div>
+            <div style="align-self:flex-end">
+              <button class="btn btn-primary" onclick="saveApiSettings()">Save Settings</button>
+            </div>
+          </div>
         </div>
 
-        <div style="display:flex; gap:0.75rem; flex-wrap:wrap">
-          <div style="flex:1; min-width:260px">
-            <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">ARTICLES PUSH URL</div>
-            <input class="input" id="pushArticlesEndpointUrl" placeholder="https://example.com/api/articles-push" />
-            <div style="font-size:0.74rem; color:#888; margin-top:0.4rem">Set empty to disable article POST.</div>
+        <div class="card"
+          style="background:var(--ink); border-color:#333; color:#a0ffa0; font-family:var(--mono); font-size:0.78rem; line-height:1.8">
+          <div style="color:#666; margin-bottom:0.75rem"># Example curl commands</div>
+          <div style="margin-bottom:0.5rem"><span style="color:#60b0ff">curl</span> http://localhost:9999/api/status
           </div>
-          <div style="flex:1; min-width:260px">
-            <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">MOBILES PUSH URL</div>
-            <input class="input" id="pushMobilesEndpointUrl" placeholder="https://example.com/api/mobiles-push" />
-            <div style="font-size:0.74rem; color:#888; margin-top:0.4rem">Set empty to disable mobile POST.</div>
-          </div>
-          <div style="flex:1; min-width:260px">
-            <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">PUSH HEADERS (JSON)</div>
-            <textarea class="input" id="pushEndpointHeadersJson" rows="3" placeholder='{\"Authorization\":\"Bearer ...\"}' style="width:100%; resize:vertical"></textarea>
-          </div>
-          <div style="align-self:flex-end">
-            <button class="btn btn-primary" onclick="saveApiSettings()">Save Settings</button>
-          </div>
+          <div style="margin-bottom:0.5rem"><span style="color:#60b0ff">curl</span> -X POST
+            http://localhost:9999/api/scrape -H "Content-Type: application/json" -d '{"source":"gsmarena_bd"}'</div>
+          <div style="margin-bottom:0.5rem"><span style="color:#60b0ff">curl</span> -X POST
+            http://localhost:9999/api/settings -H "Content-Type: application/json" -d
+            '{\"pushEndpointUrl\":\"https://broxlab.online/api/autocontent\",\"pushEndpointHeadersJson\":\"{\\\\\\\"Authorization\\\\\\\":\\\\\\\"Bearer
+            ...\\\\\\\"}\"}'</div>
+          <div style="margin-bottom:0.5rem"><span style="color:#60b0ff">curl</span>
+            "http://localhost:9999/api/articles?page=1&limit=10&search=ক্রিকেট"</div>
+          <div style="margin-bottom:0.5rem"><span style="color:#60b0ff">curl</span>
+            "http://localhost:9999/api/mobiles?page=1&limit=10&brand=Honor"</div>
+          <div style="margin-bottom:0.5rem"><span style="color:#60b0ff">curl</span> -X POST
+            http://localhost:9999/api/cron \<br />
+            &nbsp;&nbsp;-H "Content-Type: application/json" \<br />
+            &nbsp;&nbsp;-d '{"action":"start","schedule":"0 */3 * * *","name":"every-3h"}'</div>
+          <div><span style="color:#60b0ff">curl</span> http://localhost:9999/api/cache/export -o articles.json</div>
         </div>
       </div>
 
-      <div class="card" style="background:var(--ink); border-color:#333; color:#a0ffa0; font-family:var(--mono); font-size:0.78rem; line-height:1.8">
-        <div style="color:#666; margin-bottom:0.75rem"># Example curl commands</div>
-        <div style="margin-bottom:0.5rem"><span style="color:#60b0ff">curl</span> http://localhost:9999/api/status</div>
-        <div style="margin-bottom:0.5rem"><span style="color:#60b0ff">curl</span> -X POST http://localhost:9999/api/scrape -H "Content-Type: application/json" -d '{"source":"gsmarena_bd"}'</div>
-        <div style="margin-bottom:0.5rem"><span style="color:#60b0ff">curl</span> -X POST http://localhost:9999/api/settings -H "Content-Type: application/json" -d '{\"pushEndpointUrl\":\"https://broxlab.online/api/autocontent\",\"pushEndpointHeadersJson\":\"{\\\\\\\"Authorization\\\\\\\":\\\\\\\"Bearer ...\\\\\\\"}\"}'</div>
-        <div style="margin-bottom:0.5rem"><span style="color:#60b0ff">curl</span> "http://localhost:9999/api/articles?page=1&limit=10&search=ক্রিকেট"</div>
-        <div style="margin-bottom:0.5rem"><span style="color:#60b0ff">curl</span> "http://localhost:9999/api/mobiles?page=1&limit=10&brand=Honor"</div>
-        <div style="margin-bottom:0.5rem"><span style="color:#60b0ff">curl</span> -X POST http://localhost:9999/api/cron \<br/>
-        &nbsp;&nbsp;-H "Content-Type: application/json" \<br/>
-        &nbsp;&nbsp;-d '{"action":"start","schedule":"0 */3 * * *","name":"every-3h"}'</div>
-        <div><span style="color:#60b0ff">curl</span> http://localhost:9999/api/cache/export -o articles.json</div>
-      </div>
     </div>
-
   </div>
-</div>
 
-<script>
-  let currentPage = 1;
-  let pollInterval = null;
-  let statusPollInterval = null;
-  let currentArticles = [];
-  let selectedArticleUrl = null;
-  let currentMobiles = [];
-  let selectedMobileUrl = null;
-  let mobilesPage = 1;
-  let selectedSource = 'all';
-  let availableSources = [];
+  <script>
+    let currentPage = 1;
+    let pollInterval = null;
+    let statusPollInterval = null;
+    let currentArticles = [];
+    let selectedArticleUrl = null;
+    let currentMobiles = [];
+    let selectedMobileUrl = null;
+    let mobilesPage = 1;
+    let selectedSource = 'all';
+    let availableSources = [];
 
-  // ── Mobile sidebar ──
-  function toggleSidebar() {
-    document.body.classList.toggle('sidebar-open');
-  }
-
-  function closeSidebar() {
-    document.body.classList.remove('sidebar-open');
-  }
-
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeSidebar();
-  });
-
-  window.addEventListener('resize', () => {
-    if (window.innerWidth > 820) closeSidebar();
-  });
-
-  // ── Navigation ──
-  function showPage(name) {
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
-    document.getElementById('page-' + name)?.classList.add('active');
-    document.getElementById('nav-' + name)?.classList.add('active');
-
-    if (name === 'articles') loadArticles();
-    if (name === 'mobiles') loadMobiles();
-    if (name === 'cron') loadCronJobs();
-    if (name === 'dashboard') loadDashboard();
-    if (name === 'api') loadApiSettings();
-    if (name === 'settings') { loadMainSettings(); loadPushLogs(); }
-
-    closeSidebar();
-  }
-
-  // ── API helpers ──
-  async function api(path, opts = {}) {
-    const r = await fetch(path, opts);
-    return r.json();
-  }
-
-  // ── API settings ──
-  // ── Main settings page ──
-  function setBadge(id, text, extraClass = '') {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.textContent = text;
-    el.className = `tag ${extraClass}`.trim();
-  }
-
-  function applySettingsToInputs(data) {
-    const pushUrl = (data.pushEndpointUrl || '').toString();
-    const pushArticlesUrl = (data.pushArticlesEndpointUrl || pushUrl || '').toString();
-    const pushMobilesUrl = (data.pushMobilesEndpointUrl || pushUrl || '').toString();
-    const headers = data.pushEndpointHeaders || {};
-
-    const urlApi = document.getElementById('pushArticlesEndpointUrl');
-    const mobileUrlApi = document.getElementById('pushMobilesEndpointUrl');
-    const headersApi = document.getElementById('pushEndpointHeadersJson');
-    if (urlApi) urlApi.value = pushArticlesUrl;
-    if (mobileUrlApi) mobileUrlApi.value = pushMobilesUrl;
-    if (headersApi) headersApi.value = JSON.stringify(headers, null, 2);
-
-    const urlMain = document.getElementById('setPushEndpointUrl');
-    const urlMainArticles = document.getElementById('setPushArticlesEndpointUrl');
-    const urlMainMobiles = document.getElementById('setPushMobilesEndpointUrl');
-    const headersMain = document.getElementById('setPushEndpointHeadersJson');
-    if (urlMain) urlMain.value = pushUrl;
-    if (urlMainArticles) urlMainArticles.value = pushArticlesUrl;
-    if (urlMainMobiles) urlMainMobiles.value = pushMobilesUrl;
-    if (headersMain) headersMain.value = JSON.stringify(headers, null, 2);
-
-    const pushEnabledEl = document.getElementById('setPushEnabled');
-    if (pushEnabledEl) pushEnabledEl.checked = data.pushEnabled !== false;
-    const pushArticlesEnabledEl = document.getElementById('setPushArticlesEnabled');
-    if (pushArticlesEnabledEl) pushArticlesEnabledEl.checked = data.pushArticlesEnabled !== false;
-    const pushMobilesEnabledEl = document.getElementById('setPushMobilesEnabled');
-    if (pushMobilesEnabledEl) pushMobilesEnabledEl.checked = data.pushMobilesEnabled !== false;
-
-    const maxItemsEl = document.getElementById('setScrapeMaxItems');
-    if (maxItemsEl) maxItemsEl.value = String(data.scrapeMaxItems ?? 10);
-
-    const delayEl = document.getElementById('setScrapeDelayMs');
-    if (delayEl) delayEl.value = String(data.scrapeDelayMs ?? 300);
-
-    const cacheMaxA = document.getElementById('setCacheMaxArticles');
-    if (cacheMaxA) cacheMaxA.value = String(data.cacheMaxArticles ?? 500);
-
-    const cacheMaxM = document.getElementById('setCacheMaxMobiles');
-    if (cacheMaxM) cacheMaxM.value = String(data.cacheMaxMobiles ?? 500);
-
-    const cacheAuto = document.getElementById('setCacheAutoClearEnabled');
-    if (cacheAuto) cacheAuto.checked = Boolean(data.cacheAutoClearEnabled);
-
-    const cacheRetention = document.getElementById('setCacheRetentionHours');
-    if (cacheRetention) cacheRetention.value = String(data.cacheRetentionHours ?? 0);
-
-    const pushEnabled = data.pushEnabled !== false;
-    const hasAnyUrl = pushArticlesUrl.trim().length > 0 || pushMobilesUrl.trim().length > 0;
-    setBadge('apiSettingsStatus', !pushEnabled ? 'Push Off' : (hasAnyUrl ? 'Loaded' : 'Disabled'), !pushEnabled ? 'red' : (hasAnyUrl ? 'green' : ''));
-    setBadge('mainSettingsStatus', 'Loaded', 'green');
-  }
-
-  async function loadMainSettings() {
-    try {
-      const data = await api('/api/settings');
-      applySettingsToInputs(data);
-      return data;
-    } catch (e) {
-      setBadge('apiSettingsStatus', 'Offline', 'red');
-      setBadge('mainSettingsStatus', 'Offline', 'red');
-      throw e;
-    }
-  }
-
-  async function saveMainSettings() {
-    const headersJson = (document.getElementById('setPushEndpointHeadersJson')?.value || '{}').trim();
-    if (headersJson) {
-      try { JSON.parse(headersJson); } catch { return alert('Invalid headers JSON'); }
+    // ── Mobile sidebar ──
+    function toggleSidebar() {
+      document.body.classList.toggle('sidebar-open');
     }
 
-    setBadge('mainSettingsStatus', 'Saving...');
+    function closeSidebar() {
+      document.body.classList.remove('sidebar-open');
+    }
 
-    const result = await api('/api/settings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        scrapeMaxItems: (document.getElementById('setScrapeMaxItems')?.value || '10').trim(),
-        scrapeDelayMs: (document.getElementById('setScrapeDelayMs')?.value || '300').trim(),
-        pushEnabled: Boolean(document.getElementById('setPushEnabled')?.checked),
-        pushArticlesEnabled: Boolean(document.getElementById('setPushArticlesEnabled')?.checked),
-        pushMobilesEnabled: Boolean(document.getElementById('setPushMobilesEnabled')?.checked),
-        pushEndpointUrl: (document.getElementById('setPushEndpointUrl')?.value || '').trim(),
-        pushArticlesEndpointUrl: (document.getElementById('setPushArticlesEndpointUrl')?.value || '').trim(),
-        pushMobilesEndpointUrl: (document.getElementById('setPushMobilesEndpointUrl')?.value || '').trim(),
-        pushEndpointHeadersJson: headersJson || '{}',
-        cacheMaxArticles: (document.getElementById('setCacheMaxArticles')?.value || '500').trim(),
-        cacheMaxMobiles: (document.getElementById('setCacheMaxMobiles')?.value || '500').trim(),
-        cacheAutoClearEnabled: Boolean(document.getElementById('setCacheAutoClearEnabled')?.checked),
-        cacheRetentionHours: (document.getElementById('setCacheRetentionHours')?.value || '0').trim(),
-      }),
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeSidebar();
     });
 
-    applySettingsToInputs(result);
-    setBadge('mainSettingsStatus', 'Saved', 'green');
-  }
-
-  async function loadApiSettings() {
-    return loadMainSettings();
-  }
-
-  async function saveApiSettings() {
-    const badge = document.getElementById('apiSettingsStatus');
-    const articleUrlInput = document.getElementById('pushArticlesEndpointUrl');
-    const mobileUrlInput = document.getElementById('pushMobilesEndpointUrl');
-    const headersInput = document.getElementById('pushEndpointHeadersJson');
-    const pushArticlesEndpointUrl = (articleUrlInput?.value || '').trim();
-    const pushMobilesEndpointUrl = (mobileUrlInput?.value || '').trim();
-    const rawHeadersJson = (headersInput?.value || '').trim();
-
-    if (rawHeadersJson) {
-      try { JSON.parse(rawHeadersJson); } catch { return alert('Invalid headers JSON'); }
-    }
-
-    if (badge) {
-      badge.textContent = 'Saving...';
-      badge.className = 'tag';
-    }
-
-    const result = await api('/api/settings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        pushArticlesEndpointUrl,
-        pushMobilesEndpointUrl,
-        pushEndpointHeadersJson: rawHeadersJson || '{}',
-      }),
+    window.addEventListener('resize', () => {
+      if (window.innerWidth > 820) closeSidebar();
     });
 
-    applySettingsToInputs(result);
-    const pushEnabled = result.pushEnabled !== false;
-    const hasUrl = (result.pushArticlesEndpointUrl || '').trim().length > 0 || (result.pushMobilesEndpointUrl || '').trim().length > 0;
-    setBadge('apiSettingsStatus', !pushEnabled ? 'Push Off' : (hasUrl ? 'Saved' : 'Disabled'), !pushEnabled ? 'red' : (hasUrl ? 'green' : ''));
-  }
+    // ── Navigation ──
+    function showPage(name) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+      document.getElementById('page-' + name)?.classList.add('active');
+      document.getElementById('nav-' + name)?.classList.add('active');
 
-  // ── Status poll ──
-  async function pollStatus() {
-    try {
-      const data = await api('/api/status');
-      const running = data.scraper?.running;
+      if (name === 'articles') loadArticles();
+      if (name === 'mobiles') loadMobiles();
+      if (name === 'cron') loadCronJobs();
+      if (name === 'dashboard') loadDashboard();
+      if (name === 'api') loadApiSettings();
+      if (name === 'settings') { loadMainSettings(); loadPushLogs(); }
 
-      // Header
-      const dot = document.getElementById('hdrDot');
-      const hdrStatus = document.getElementById('hdrStatus');
-      dot.className = 'pulse-dot ' + (running ? 'active' : 'idle');
-      hdrStatus.textContent = running ? `Scraping (${data.scraper.trigger})` : 'Idle';
+      closeSidebar();
+    }
 
-      // Sidebar
-      document.getElementById('sb-total').textContent = data.cache?.totalCached ?? '—';
-      document.getElementById('sb-mobiles').textContent = data.cache?.totalMobilesCached ?? '—';
-      document.getElementById('sb-runs').textContent = data.cache?.totalRuns ?? '—';
+    // ── API helpers ──
+    async function api(path, opts = {}) {
+      const r = await fetch(path, opts);
+      return r.json();
+    }
 
-      // Trigger button
-      const btn = document.getElementById('triggerBtn');
-      const scrapeBtn = document.getElementById('scrapeBtn');
-      if (running) {
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner"></span> Running...';
-        if (scrapeBtn) { scrapeBtn.disabled = true; scrapeBtn.innerHTML = '<span class="spinner"></span> Running...'; }
-      } else {
-        btn.disabled = false;
-        btn.innerHTML = '▶ Scrape Now';
-        if (scrapeBtn) { scrapeBtn.disabled = false; scrapeBtn.innerHTML = '▶ Start Scrape'; }
+    // ── API settings ──
+    // ── Main settings page ──
+    function setBadge(id, text, extraClass = '') {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = text;
+      el.className = `tag ${extraClass}`.trim();
+    }
+
+    function applySettingsToInputs(data) {
+      const pushUrl = (data.pushEndpointUrl || '').toString();
+      const pushArticlesUrl = (data.pushArticlesEndpointUrl || pushUrl || '').toString();
+      const pushMobilesUrl = (data.pushMobilesEndpointUrl || pushUrl || '').toString();
+      const headers = data.pushEndpointHeaders || {};
+
+      const urlApi = document.getElementById('pushArticlesEndpointUrl');
+      const mobileUrlApi = document.getElementById('pushMobilesEndpointUrl');
+      const headersApi = document.getElementById('pushEndpointHeadersJson');
+      if (urlApi) urlApi.value = pushArticlesUrl;
+      if (mobileUrlApi) mobileUrlApi.value = pushMobilesUrl;
+      if (headersApi) headersApi.value = JSON.stringify(headers, null, 2);
+
+      const urlMain = document.getElementById('setPushEndpointUrl');
+      const urlMainArticles = document.getElementById('setPushArticlesEndpointUrl');
+      const urlMainMobiles = document.getElementById('setPushMobilesEndpointUrl');
+      const headersMain = document.getElementById('setPushEndpointHeadersJson');
+      if (urlMain) urlMain.value = pushUrl;
+      if (urlMainArticles) urlMainArticles.value = pushArticlesUrl;
+      if (urlMainMobiles) urlMainMobiles.value = pushMobilesUrl;
+      if (headersMain) headersMain.value = JSON.stringify(headers, null, 2);
+
+      const pushEnabledEl = document.getElementById('setPushEnabled');
+      if (pushEnabledEl) pushEnabledEl.checked = data.pushEnabled !== false;
+      const pushArticlesEnabledEl = document.getElementById('setPushArticlesEnabled');
+      if (pushArticlesEnabledEl) pushArticlesEnabledEl.checked = data.pushArticlesEnabled !== false;
+      const pushMobilesEnabledEl = document.getElementById('setPushMobilesEnabled');
+      if (pushMobilesEnabledEl) pushMobilesEnabledEl.checked = data.pushMobilesEnabled !== false;
+
+      const maxItemsEl = document.getElementById('setScrapeMaxItems');
+      if (maxItemsEl) maxItemsEl.value = String(data.scrapeMaxItems ?? 10);
+
+      const delayEl = document.getElementById('setScrapeDelayMs');
+      if (delayEl) delayEl.value = String(data.scrapeDelayMs ?? 300);
+
+      const minIntervalEl = document.getElementById('setScrapeRequestMinIntervalMs');
+      if (minIntervalEl) minIntervalEl.value = String(data.scrapeRequestMinIntervalMs ?? 150);
+
+      const cacheMaxA = document.getElementById('setCacheMaxArticles');
+      if (cacheMaxA) cacheMaxA.value = String(data.cacheMaxArticles ?? 500);
+
+      const cacheMaxM = document.getElementById('setCacheMaxMobiles');
+      if (cacheMaxM) cacheMaxM.value = String(data.cacheMaxMobiles ?? 500);
+
+      const cacheAuto = document.getElementById('setCacheAutoClearEnabled');
+      if (cacheAuto) cacheAuto.checked = Boolean(data.cacheAutoClearEnabled);
+
+      const cacheRetention = document.getElementById('setCacheRetentionHours');
+      if (cacheRetention) cacheRetention.value = String(data.cacheRetentionHours ?? 0);
+
+      const pushEnabled = data.pushEnabled !== false;
+      const hasAnyUrl = pushArticlesUrl.trim().length > 0 || pushMobilesUrl.trim().length > 0;
+      setBadge('apiSettingsStatus', !pushEnabled ? 'Push Off' : (hasAnyUrl ? 'Loaded' : 'Disabled'), !pushEnabled ? 'red' : (hasAnyUrl ? 'green' : ''));
+      setBadge('mainSettingsStatus', 'Loaded', 'green');
+    }
+
+    async function loadMainSettings() {
+      try {
+        const data = await api('/api/settings');
+        applySettingsToInputs(data);
+        return data;
+      } catch (e) {
+        setBadge('apiSettingsStatus', 'Offline', 'red');
+        setBadge('mainSettingsStatus', 'Offline', 'red');
+        throw e;
+      }
+    }
+
+    async function saveMainSettings() {
+      const headersJson = (document.getElementById('setPushEndpointHeadersJson')?.value || '{}').trim();
+      if (headersJson) {
+        try { JSON.parse(headersJson); } catch { return alert('Invalid headers JSON'); }
       }
 
-      // Scraper page log
-      const badge = document.getElementById('scrapeStatusBadge');
+      setBadge('mainSettingsStatus', 'Saving...');
+
+      const result = await api('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          scrapeMaxItems: (document.getElementById('setScrapeMaxItems')?.value || '10').trim(),
+          scrapeDelayMs: (document.getElementById('setScrapeDelayMs')?.value || '300').trim(),
+          scrapeRequestMinIntervalMs: (document.getElementById('setScrapeRequestMinIntervalMs')?.value || '150').trim(),
+          pushEnabled: Boolean(document.getElementById('setPushEnabled')?.checked),
+          pushArticlesEnabled: Boolean(document.getElementById('setPushArticlesEnabled')?.checked),
+          pushMobilesEnabled: Boolean(document.getElementById('setPushMobilesEnabled')?.checked),
+          pushEndpointUrl: (document.getElementById('setPushEndpointUrl')?.value || '').trim(),
+          pushArticlesEndpointUrl: (document.getElementById('setPushArticlesEndpointUrl')?.value || '').trim(),
+          pushMobilesEndpointUrl: (document.getElementById('setPushMobilesEndpointUrl')?.value || '').trim(),
+          pushEndpointHeadersJson: headersJson || '{}',
+          cacheMaxArticles: (document.getElementById('setCacheMaxArticles')?.value || '500').trim(),
+          cacheMaxMobiles: (document.getElementById('setCacheMaxMobiles')?.value || '500').trim(),
+          cacheAutoClearEnabled: Boolean(document.getElementById('setCacheAutoClearEnabled')?.checked),
+          cacheRetentionHours: (document.getElementById('setCacheRetentionHours')?.value || '0').trim(),
+        }),
+      });
+
+      applySettingsToInputs(result);
+      setBadge('mainSettingsStatus', 'Saved', 'green');
+    }
+
+    async function loadApiSettings() {
+      return loadMainSettings();
+    }
+
+    async function saveApiSettings() {
+      const badge = document.getElementById('apiSettingsStatus');
+      const articleUrlInput = document.getElementById('pushArticlesEndpointUrl');
+      const mobileUrlInput = document.getElementById('pushMobilesEndpointUrl');
+      const headersInput = document.getElementById('pushEndpointHeadersJson');
+      const pushArticlesEndpointUrl = (articleUrlInput?.value || '').trim();
+      const pushMobilesEndpointUrl = (mobileUrlInput?.value || '').trim();
+      const rawHeadersJson = (headersInput?.value || '').trim();
+
+      if (rawHeadersJson) {
+        try { JSON.parse(rawHeadersJson); } catch { return alert('Invalid headers JSON'); }
+      }
+
       if (badge) {
-        badge.textContent = running ? 'Running' : 'Idle';
-        badge.className = 'tag ' + (running ? 'red' : '');
+        badge.textContent = 'Saving...';
+        badge.className = 'tag';
       }
 
-      if (running) {
-        const logData = await api('/api/scrape/log');
-        renderLog(logData.log);
-        if (!pollInterval) pollInterval = setInterval(refreshLog, 1500);
-      } else {
-        if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
-        if (data.scraper?.lastResult) renderLastResult(data.scraper.lastResult);
-      }
+      const result = await api('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pushArticlesEndpointUrl,
+          pushMobilesEndpointUrl,
+          pushEndpointHeadersJson: rawHeadersJson || '{}',
+        }),
+      });
 
-    } catch(e) { /* server offline */ }
-  }
-
-  async function refreshLog() {
-    const data = await api('/api/scrape/log');
-    renderLog(data.log);
-    if (!data.running && pollInterval) {
-      clearInterval(pollInterval);
-      pollInterval = null;
-      loadDashboard();
+      applySettingsToInputs(result);
+      const pushEnabled = result.pushEnabled !== false;
+      const hasUrl = (result.pushArticlesEndpointUrl || '').trim().length > 0 || (result.pushMobilesEndpointUrl || '').trim().length > 0;
+      setBadge('apiSettingsStatus', !pushEnabled ? 'Push Off' : (hasUrl ? 'Saved' : 'Disabled'), !pushEnabled ? 'red' : (hasUrl ? 'green' : ''));
     }
-  }
 
-  function renderLog(log) {
-    const box = document.getElementById('logBox');
-    if (!box || !log?.length) return;
-    box.innerHTML = log.slice(-100).map(e => {
-      const cls = `stage-${e.stage || ''}`;
-      const url = (() => {
-        if (!e.url) return '';
-        try {
-          const u = new URL(e.url);
-          return `<span style="color:#666"> ${escapeHtml(u.pathname + u.search)}</span>`;
-        } catch {
-          return `<span style="color:#666"> ${escapeHtml(String(e.url))}</span>`;
+    // ── Status poll ──
+    async function pollStatus() {
+      try {
+        const data = await api('/api/status');
+        const running = data.scraper?.running;
+
+        // Header
+        const dot = document.getElementById('hdrDot');
+        const hdrStatus = document.getElementById('hdrStatus');
+        dot.className = 'pulse-dot ' + (running ? 'active' : 'idle');
+        hdrStatus.textContent = running ? `Scraping (${data.scraper.trigger})` : 'Idle';
+
+        // Sidebar
+        document.getElementById('sb-total').textContent = data.cache?.totalCached ?? '—';
+        document.getElementById('sb-mobiles').textContent = data.cache?.totalMobilesCached ?? '—';
+        document.getElementById('sb-runs').textContent = data.cache?.totalRuns ?? '—';
+
+        // Trigger button
+        const btn = document.getElementById('triggerBtn');
+        const scrapeBtn = document.getElementById('scrapeBtn');
+        if (running) {
+          btn.disabled = true;
+          btn.innerHTML = '<span class="spinner"></span> Running...';
+          if (scrapeBtn) { scrapeBtn.disabled = true; scrapeBtn.innerHTML = '<span class="spinner"></span> Running...'; }
+        } else {
+          btn.disabled = false;
+          btn.innerHTML = '▶ Scrape Now';
+          if (scrapeBtn) { scrapeBtn.disabled = false; scrapeBtn.innerHTML = '▶ Start Scrape'; }
         }
-      })();
-      return `<div class="log-entry"><span class="ts">[${e.time?.slice(11,19) || '--'}]</span> <span class="${cls}">${e.message || ''}</span>${url}</div>`;
-    }).join('');
-    box.scrollTop = box.scrollHeight;
-  }
 
-  function renderLastResult(result) {
-    const card = document.getElementById('lastResultCard');
-    const content = document.getElementById('lastResultContent');
-    if (!card || !content) return;
-    card.style.display = 'block';
-    if (result.error) {
-      content.innerHTML = `<span class="tag red">Error</span> <span style="font-family:var(--mono);font-size:0.8rem">${result.error}</span>`;
-    } else {
-      content.innerHTML = `
-        <div style="display:flex; gap:1rem; flex-wrap:wrap">
-          <span class="tag green">Success</span>
-          <span style="font-size:0.82rem">Scraped: <strong>${result.total}</strong></span>
-          <span style="font-size:0.82rem">Saved: <strong>${result.success}</strong></span>
-          <span style="font-size:0.82rem">New in cache: <strong>${result.addedToCache || 0}</strong></span>
-          <span style="font-size:0.82rem">Errors: <strong>${result.errors?.length || 0}</strong></span>
-        </div>`;
-    }
-  }
+        // Scraper page log
+        const badge = document.getElementById('scrapeStatusBadge');
+        if (badge) {
+          badge.textContent = running ? 'Running' : 'Idle';
+          badge.className = 'tag ' + (running ? 'red' : '');
+        }
 
-  // ── Dashboard ──
-  async function loadDashboard() {
-    const stats = await api('/api/stats');
-    document.getElementById('d-total').textContent = stats.totalCached ?? 0;
-    document.getElementById('d-runs').textContent = stats.totalRuns ?? 0;
+        if (running) {
+          const logData = await api('/api/scrape/log');
+          renderLog(logData.log);
+          if (!pollInterval) pollInterval = setInterval(refreshLog, 1500);
+        } else {
+          if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+          if (data.scraper?.lastResult) renderLastResult(data.scraper.lastResult);
+        }
 
-    const lr = stats.recentRuns?.[0];
-    if (lr) {
-      document.getElementById('d-lastrun').textContent = new Date(lr.runAt).toLocaleString('bn-BD');
-      document.getElementById('d-trigger').textContent = `trigger: ${lr.trigger}`;
+      } catch (e) { /* server offline */ }
     }
 
-    // Categories
-    const cats = stats.categories || {};
-    const catEl = document.getElementById('d-cats');
-    if (Object.keys(cats).length === 0) {
-      catEl.innerHTML = '<span style="color:#aaa;font-size:0.82rem">No data yet</span>';
-    } else {
-      catEl.innerHTML = Object.entries(cats)
-        .sort((a,b) => b[1]-a[1])
-        .map(([cat, count]) => `<span class="tag">${cat} <strong>${count}</strong></span>`)
-        .join('');
+    async function refreshLog() {
+      const data = await api('/api/scrape/log');
+      renderLog(data.log);
+      if (!data.running && pollInterval) {
+        clearInterval(pollInterval);
+        pollInterval = null;
+        loadDashboard();
+      }
     }
 
-    // Runs list
-    const runs = stats.recentRuns || [];
-    const runsEl = document.getElementById('d-runs-list');
-    if (!runs.length) {
-      runsEl.innerHTML = '<span style="color:#aaa;font-size:0.82rem">No runs yet</span>';
-    } else {
-      runsEl.innerHTML = runs.map(r => `
+    function renderLog(log) {
+      const box = document.getElementById('logBox');
+      if (!box || !log?.length) return;
+      box.innerHTML = log.slice(-100).map(e => {
+        const cls = `stage-${e.stage || ''}`;
+        const url = (() => {
+          if (!e.url) return '';
+          try {
+            const u = new URL(e.url);
+            return `<span style="color:#666"> ${escapeHtml(u.pathname + u.search)}</span>`;
+          } catch {
+            return `<span style="color:#666"> ${escapeHtml(String(e.url))}</span>`;
+          }
+        })();
+        const message = `<span class="${cls}">${escapeHtml(e.message || '')}</span>${url}`;
+        if (e.stage === 'error' && e.errorDetails) {
+          return `
+            <details class="log-entry log-error-details">
+              <summary><span class="ts">[${e.time?.slice(11, 19) || '--'}]</span> ${message}</summary>
+              <pre>${escapeHtml(JSON.stringify(e.errorDetails, null, 2))}</pre>
+            </details>`;
+        }
+        return `<div class="log-entry"><span class="ts">[${e.time?.slice(11, 19) || '--'}]</span> ${message}</div>`;
+      }).join('');
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function renderLastResult(result) {
+      const card = document.getElementById('lastResultCard');
+      const content = document.getElementById('lastResultContent');
+      const errorsCard = document.getElementById('scraperErrorsCard');
+      const errorsContent = document.getElementById('scraperErrorsContent');
+      if (!card || !content) return;
+      card.style.display = 'block';
+      if (errorsCard) errorsCard.style.display = 'none';
+      if (errorsContent) errorsContent.innerHTML = '';
+
+      if (result.error) {
+        content.innerHTML = `
+          <div style="display:flex; gap:0.75rem; flex-wrap:wrap; align-items:flex-start">
+            <span class="tag red">Error</span>
+            <span style="font-family:var(--mono);font-size:0.8rem; white-space:pre-wrap">${escapeHtml(result.error)}</span>
+          </div>
+          ${result.errorDetails ? `<details class="error-details-block"><summary class="error-summary">Show details</summary><pre class="error-details-pre">${escapeHtml(JSON.stringify(result.errorDetails, null, 2))}</pre></details>` : ''}`;
+      } else {
+        content.innerHTML = `
+          <div style="display:flex; gap:1rem; flex-wrap:wrap">
+            <span class="tag green">Success</span>
+            <span style="font-size:0.82rem">Scraped: <strong>${result.total}</strong></span>
+            <span style="font-size:0.82rem">Saved: <strong>${result.success}</strong></span>
+            <span style="font-size:0.82rem">New in cache: <strong>${result.addedToCache || 0}</strong></span>
+            <span style="font-size:0.82rem">Errors: <strong>${result.errors?.length || 0}</strong></span>
+          </div>`;
+
+        const errors = Array.isArray(result.errors) ? result.errors : [];
+        if (errors.length && errorsCard && errorsContent) {
+          errorsCard.style.display = 'block';
+          errorsContent.innerHTML = `
+            <div class="scraper-error-list">
+              ${errors.map((item, index) => {
+                const source = item.sourceKey || item.source || result.sourceKey || 'unknown';
+                const details = item.errorDetails
+                  ? `<details class="error-details-block"><summary class="error-summary">Show details</summary><pre class="error-details-pre">${escapeHtml(JSON.stringify(item.errorDetails, null, 2))}</pre></details>`
+                  : '';
+                return `
+                  <div class="scraper-error-item">
+                    <div class="scraper-error-meta">
+                      <span class="tag red">${escapeHtml(source)}</span>
+                      ${item.url ? `<span class="tag">${escapeHtml(item.url)}</span>` : ''}
+                      ${item.httpStatus ? `<span class="tag">${escapeHtml(String(item.httpStatus))}</span>` : ''}
+                    </div>
+                    <div class="scraper-error-message">${escapeHtml(item.error || item.message || `Error #${index + 1}`)}</div>
+                    ${details}
+                  </div>`;
+              }).join('')}
+            </div>`;
+        }
+      }
+    }
+
+    // ── Dashboard ──
+    async function loadDashboard() {
+      const stats = await api('/api/stats');
+      document.getElementById('d-total').textContent = stats.totalCached ?? 0;
+      document.getElementById('d-runs').textContent = stats.totalRuns ?? 0;
+
+      const lr = stats.recentRuns?.[0];
+      if (lr) {
+        document.getElementById('d-lastrun').textContent = new Date(lr.runAt).toLocaleString('bn-BD');
+        document.getElementById('d-trigger').textContent = `trigger: ${lr.trigger}`;
+      }
+
+      // Categories
+      const cats = stats.categories || {};
+      const catEl = document.getElementById('d-cats');
+      if (Object.keys(cats).length === 0) {
+        catEl.innerHTML = '<span style="color:#aaa;font-size:0.82rem">No data yet</span>';
+      } else {
+        catEl.innerHTML = Object.entries(cats)
+          .sort((a, b) => b[1] - a[1])
+          .map(([cat, count]) => `<span class="tag">${cat} <strong>${count}</strong></span>`)
+          .join('');
+      }
+
+      // Runs list
+      const runs = stats.recentRuns || [];
+      const runsEl = document.getElementById('d-runs-list');
+      if (!runs.length) {
+        runsEl.innerHTML = '<span style="color:#aaa;font-size:0.82rem">No runs yet</span>';
+      } else {
+        runsEl.innerHTML = runs.map(r => `
         <div class="run-item">
-          <div class="run-time">${new Date(r.runAt).toLocaleString('bn-BD', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'})}</div>
+          <div class="run-time">${new Date(r.runAt).toLocaleString('bn-BD', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
           <div class="run-info">
             <span class="tag green">+${r.addedToCache || 0} new</span>
             <span class="tag">${r.success}/${r.scraped} ok</span>
@@ -1356,35 +1796,35 @@
             <span style="font-size:0.72rem; color:#888">${r.trigger}</span>
           </div>
         </div>`).join('');
-    }
-  }
-
-  // ── Articles ──
-  let articlesPage = 1;
-  async function loadArticles(page = 1) {
-    articlesPage = page;
-    const search = document.getElementById('articleSearch')?.value || '';
-    const cat = document.getElementById('catFilter')?.value || '';
-    const source = document.getElementById('articleSourceFilter')?.value || '';
-    const limit = Math.max(1, Math.min(200, Number.parseInt(document.getElementById('articleLimitInput')?.value || '15', 10) || 15));
-    const data = await api(`/api/articles?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&category=${encodeURIComponent(cat)}&source=${encodeURIComponent(source)}`);
-    const tbody = document.getElementById('articlesBody');
-    currentArticles = data.articles || [];
-
-    if (currentArticles.length) {
-      const hasSelected = currentArticles.some(article => article.url === selectedArticleUrl);
-      if (!selectedArticleUrl || !hasSelected) {
-        selectedArticleUrl = currentArticles[0].url;
       }
-    } else {
-      selectedArticleUrl = null;
     }
 
-    if (!currentArticles.length) {
-      tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="icon">📭</div><div>No articles cached yet. Run a scrape first.</div></div></td></tr>`;
-    } else {
-      renderArticleDetails(currentArticles.find(article => article.url === selectedArticleUrl) || currentArticles[0]);
-      tbody.innerHTML = currentArticles.map(a => `
+    // ── Articles ──
+    let articlesPage = 1;
+    async function loadArticles(page = 1) {
+      articlesPage = page;
+      const search = document.getElementById('articleSearch')?.value || '';
+      const cat = document.getElementById('catFilter')?.value || '';
+      const source = document.getElementById('articleSourceFilter')?.value || '';
+      const limit = Math.max(1, Math.min(200, Number.parseInt(document.getElementById('articleLimitInput')?.value || '15', 10) || 15));
+      const data = await api(`/api/articles?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&category=${encodeURIComponent(cat)}&source=${encodeURIComponent(source)}`);
+      const tbody = document.getElementById('articlesBody');
+      currentArticles = data.articles || [];
+
+      if (currentArticles.length) {
+        const hasSelected = currentArticles.some(article => article.url === selectedArticleUrl);
+        if (!selectedArticleUrl || !hasSelected) {
+          selectedArticleUrl = currentArticles[0].url;
+        }
+      } else {
+        selectedArticleUrl = null;
+      }
+
+      if (!currentArticles.length) {
+        tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="icon">📭</div><div>No articles cached yet. Run a scrape first.</div></div></td></tr>`;
+      } else {
+        renderArticleDetails(currentArticles.find(article => article.url === selectedArticleUrl) || currentArticles[0]);
+        tbody.innerHTML = currentArticles.map(a => `
         <tr class="clickable-row ${a.url === selectedArticleUrl ? 'selected-row' : ''}" onclick="selectArticle('${escapeJs(a.url)}')">
           <td class="article-title">
             <a href="${a.url}" target="_blank" onclick="event.stopPropagation()">${escapeHtml(a.title || '(no title)')}</a>
@@ -1392,104 +1832,104 @@
           </td>
           <td><span class="tag">${a.category || '—'}</span></td>
           <td style="font-size:0.78rem;color:#666">${a.author || '—'}</td>
-          <td style="font-size:0.75rem;font-family:var(--mono);color:#888;white-space:nowrap">${a.publishedText || a.publishedAt?.slice(0,10) || '—'}</td>
-          <td style="font-size:0.72rem">${(a.tags||[]).slice(0,3).map(t=>`<span class="tag" style="margin:1px">${t}</span>`).join('')}</td>
+          <td style="font-size:0.75rem;font-family:var(--mono);color:#888;white-space:nowrap">${a.publishedText || a.publishedAt?.slice(0, 10) || '—'}</td>
+          <td style="font-size:0.72rem">${(a.tags || []).slice(0, 3).map(t => `<span class="tag" style="margin:1px">${t}</span>`).join('')}</td>
         </tr>`).join('');
+      }
+
+      // Pagination
+      const pg = data.pagination;
+      const pagEl = document.getElementById('pagination');
+      if (pg.pages <= 1) { pagEl.innerHTML = ''; return; }
+      let html = '';
+      if (pg.page > 1) html += `<button class="page-btn" onclick="loadArticles(${pg.page - 1})">‹</button>`;
+      for (let i = Math.max(1, pg.page - 2); i <= Math.min(pg.pages, pg.page + 2); i++) {
+        html += `<button class="page-btn ${i === pg.page ? 'active' : ''}" onclick="loadArticles(${i})">${i}</button>`;
+      }
+      if (pg.page < pg.pages) html += `<button class="page-btn" onclick="loadArticles(${pg.page + 1})">›</button>`;
+      pagEl.innerHTML = html;
     }
 
-    // Pagination
-    const pg = data.pagination;
-    const pagEl = document.getElementById('pagination');
-    if (pg.pages <= 1) { pagEl.innerHTML = ''; return; }
-    let html = '';
-    if (pg.page > 1) html += `<button class="page-btn" onclick="loadArticles(${pg.page-1})">‹</button>`;
-    for (let i = Math.max(1, pg.page-2); i <= Math.min(pg.pages, pg.page+2); i++) {
-      html += `<button class="page-btn ${i===pg.page?'active':''}" onclick="loadArticles(${i})">${i}</button>`;
+    function searchArticles() {
+      clearTimeout(window._searchTimer);
+      window._searchTimer = setTimeout(() => loadArticles(1), 300);
     }
-    if (pg.page < pg.pages) html += `<button class="page-btn" onclick="loadArticles(${pg.page+1})">›</button>`;
-    pagEl.innerHTML = html;
-  }
 
-  function searchArticles() {
-    clearTimeout(window._searchTimer);
-    window._searchTimer = setTimeout(() => loadArticles(1), 300);
-  }
-
-  function escapeHtml(value) {
-    return String(value ?? '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-  }
-
-  function escapeJs(value) {
-    return String(value ?? '')
-      .replace(/\\/g, '\\\\')
-      .replace(/'/g, "\\'");
-  }
-
-  function getSourceName(item) {
-    const direct = item?.sourceKey || item?.scraperSource || item?.source || '';
-    if (direct) return direct;
-
-    const rawUrl = item?.url || '';
-    if (!rawUrl) return '';
-
-    try {
-      const host = new URL(rawUrl).hostname.toLowerCase();
-      if (host.includes('prothomalo.com')) return 'prothomalo';
-      if (host.includes('ittefaq.com.bd')) return 'ittefaq';
-      if (host.includes('dainikshiksha.com')) return 'dainikshiksha';
-      if (host.includes('bdnews24.com')) return 'bdnews24';
-      if (host.includes('gsmarena.com')) return 'gsmarena_bd';
-      return host.replace(/^www\./, '');
-    } catch {
-      return '';
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
     }
-  }
 
-  function selectArticle(url) {
-    selectedArticleUrl = url;
-    const article = currentArticles.find(item => item.url === url) || null;
-    renderArticleDetails(article);
-    document.querySelectorAll('#articlesBody tr.clickable-row').forEach(row => row.classList.remove('selected-row'));
-    document.querySelector(`#articlesBody tr.clickable-row[onclick="selectArticle('${escapeJs(url)}')"]`)?.classList.add('selected-row');
-  }
+    function escapeJs(value) {
+      return String(value ?? '')
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'");
+    }
 
-  function renderArticleDetails(article) {
-    const container = document.getElementById('articleDetailContent');
-    if (!container) return;
+    function getSourceName(item) {
+      const direct = item?.sourceKey || item?.scraperSource || item?.source || '';
+      if (direct) return direct;
 
-    if (!article) {
-      container.innerHTML = `
+      const rawUrl = item?.url || '';
+      if (!rawUrl) return '';
+
+      try {
+        const host = new URL(rawUrl).hostname.toLowerCase();
+        if (host.includes('prothomalo.com')) return 'prothomalo';
+        if (host.includes('ittefaq.com.bd')) return 'ittefaq';
+        if (host.includes('dainikshiksha.com')) return 'dainikshiksha';
+        if (host.includes('bdnews24.com')) return 'bdnews24';
+        if (host.includes('gsmarena.com')) return 'gsmarena_bd';
+        return host.replace(/^www\./, '');
+      } catch {
+        return '';
+      }
+    }
+
+    function selectArticle(url) {
+      selectedArticleUrl = url;
+      const article = currentArticles.find(item => item.url === url) || null;
+      renderArticleDetails(article);
+      document.querySelectorAll('#articlesBody tr.clickable-row').forEach(row => row.classList.remove('selected-row'));
+      document.querySelector(`#articlesBody tr.clickable-row[onclick="selectArticle('${escapeJs(url)}')"]`)?.classList.add('selected-row');
+    }
+
+    function renderArticleDetails(article) {
+      const container = document.getElementById('articleDetailContent');
+      if (!container) return;
+
+      if (!article) {
+        container.innerHTML = `
         <div class="empty-state">
           <div class="icon">📰</div>
           <div>Select an article to view its details.</div>
         </div>`;
-      return;
-    }
+        return;
+      }
 
-    const meta = [
-      article.category,
-      article.author,
-      article.publishedText || article.publishedAt,
-      getSourceName(article) ? `source: ${getSourceName(article)}` : ''
-    ].filter(Boolean);
+      const meta = [
+        article.category,
+        article.author,
+        article.publishedText || article.publishedAt,
+        getSourceName(article) ? `source: ${getSourceName(article)}` : ''
+      ].filter(Boolean);
 
-    const tags = (article.tags || [])
-      .map(tag => `<span class="tag">${escapeHtml(tag)}</span>`)
-      .join('');
+      const tags = (article.tags || [])
+        .map(tag => `<span class="tag">${escapeHtml(tag)}</span>`)
+        .join('');
 
-    const paragraphs = String(article.content || article.excerpt || '')
-      .split(/\n{2,}/)
-      .map(p => p.trim())
-      .filter(Boolean)
-      .map(p => `<p>${escapeHtml(p)}</p>`)
-      .join('');
+      const paragraphs = String(article.content || article.excerpt || '')
+        .split(/\n{2,}/)
+        .map(p => p.trim())
+        .filter(Boolean)
+        .map(p => `<p>${escapeHtml(p)}</p>`)
+        .join('');
 
-    container.innerHTML = `
+      container.innerHTML = `
       ${article.imageUrl ? `<img class="article-detail-cover" src="${escapeHtml(article.imageUrl)}" alt="${escapeHtml(article.title || 'Article image')}">` : ''}
       <div class="article-detail-title">${escapeHtml(article.title || '(no title)')}</div>
       ${meta.length ? `<div class="article-detail-meta">${meta.map(item => `<span class="tag">${escapeHtml(item)}</span>`).join('')}</div>` : ''}
@@ -1500,44 +1940,44 @@
         <a class="btn btn-primary" href="${escapeHtml(article.url)}" target="_blank" rel="noopener noreferrer">Open Source</a>
         <button class="btn btn-secondary" onclick="copyArticleUrl('${escapeJs(article.url)}')">Copy URL</button>
       </div>`;
-  }
-
-  async function copyArticleUrl(url) {
-    try {
-      await navigator.clipboard.writeText(url);
-      alert('Article URL copied');
-    } catch (error) {
-      alert('Could not copy article URL');
     }
-  }
 
-  // ── Mobiles ──
-  async function loadMobiles(page = 1) {
-    mobilesPage = page;
-    const search = document.getElementById('mobileSearch')?.value || '';
-    const brand = document.getElementById('mobileBrand')?.value || '';
-    const status = document.getElementById('mobileStatus')?.value || '';
-    const source = document.getElementById('mobileSourceFilter')?.value || '';
-    const limit = Math.max(1, Math.min(200, Number.parseInt(document.getElementById('mobileLimitInput')?.value || '15', 10) || 15));
-
-    const data = await api(`/api/mobiles?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&brand=${encodeURIComponent(brand)}&status=${encodeURIComponent(status)}&source=${encodeURIComponent(source)}`);
-    const tbody = document.getElementById('mobilesBody');
-    currentMobiles = data.mobiles || [];
-
-    if (currentMobiles.length) {
-      const hasSelected = currentMobiles.some(item => item.url === selectedMobileUrl);
-      if (!selectedMobileUrl || !hasSelected) {
-        selectedMobileUrl = currentMobiles[0].url;
+    async function copyArticleUrl(url) {
+      try {
+        await navigator.clipboard.writeText(url);
+        alert('Article URL copied');
+      } catch (error) {
+        alert('Could not copy article URL');
       }
-    } else {
-      selectedMobileUrl = null;
     }
 
-    if (!currentMobiles.length) {
-      tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="icon">📱</div><div>No mobiles cached yet. Select source "gsmarena_bd" and run a scrape.</div></div></td></tr>`;
-    } else {
-      renderMobileDetails(currentMobiles.find(item => item.url === selectedMobileUrl) || currentMobiles[0]);
-      tbody.innerHTML = currentMobiles.map(m => `
+    // ── Mobiles ──
+    async function loadMobiles(page = 1) {
+      mobilesPage = page;
+      const search = document.getElementById('mobileSearch')?.value || '';
+      const brand = document.getElementById('mobileBrand')?.value || '';
+      const status = document.getElementById('mobileStatus')?.value || '';
+      const source = document.getElementById('mobileSourceFilter')?.value || '';
+      const limit = Math.max(1, Math.min(200, Number.parseInt(document.getElementById('mobileLimitInput')?.value || '15', 10) || 15));
+
+      const data = await api(`/api/mobiles?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&brand=${encodeURIComponent(brand)}&status=${encodeURIComponent(status)}&source=${encodeURIComponent(source)}`);
+      const tbody = document.getElementById('mobilesBody');
+      currentMobiles = data.mobiles || [];
+
+      if (currentMobiles.length) {
+        const hasSelected = currentMobiles.some(item => item.url === selectedMobileUrl);
+        if (!selectedMobileUrl || !hasSelected) {
+          selectedMobileUrl = currentMobiles[0].url;
+        }
+      } else {
+        selectedMobileUrl = null;
+      }
+
+      if (!currentMobiles.length) {
+        tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="icon">📱</div><div>No mobiles cached yet. Select source "gsmarena_bd" and run a scrape.</div></div></td></tr>`;
+      } else {
+        renderMobileDetails(currentMobiles.find(item => item.url === selectedMobileUrl) || currentMobiles[0]);
+        tbody.innerHTML = currentMobiles.map(m => `
         <tr class="clickable-row ${m.url === selectedMobileUrl ? 'selected-row' : ''}" onclick="selectMobile('${escapeJs(m.url)}')">
           <td class="article-title">
             <a href="${m.url}" target="_blank" onclick="event.stopPropagation()">${escapeHtml(m.title || '(no title)')}</a>
@@ -1548,65 +1988,65 @@
           <td><span class="tag">${escapeHtml(m.status || '—')}</span></td>
           <td style="font-size:0.78rem;color:#666">${escapeHtml(m.productCategory || m.category || '—')}</td>
         </tr>`).join('');
+      }
+
+      const pg = data.pagination;
+      const pagEl = document.getElementById('mobilesPagination');
+      if (!pg || pg.pages <= 1) { pagEl.innerHTML = ''; return; }
+      let html = '';
+      if (pg.page > 1) html += `<button class="page-btn" onclick="loadMobiles(${pg.page - 1})">‹</button>`;
+      for (let i = Math.max(1, pg.page - 2); i <= Math.min(pg.pages, pg.page + 2); i++) {
+        html += `<button class="page-btn ${i === pg.page ? 'active' : ''}" onclick="loadMobiles(${i})">${i}</button>`;
+      }
+      if (pg.page < pg.pages) html += `<button class="page-btn" onclick="loadMobiles(${pg.page + 1})">›</button>`;
+      pagEl.innerHTML = html;
     }
 
-    const pg = data.pagination;
-    const pagEl = document.getElementById('mobilesPagination');
-    if (!pg || pg.pages <= 1) { pagEl.innerHTML = ''; return; }
-    let html = '';
-    if (pg.page > 1) html += `<button class="page-btn" onclick="loadMobiles(${pg.page-1})">‹</button>`;
-    for (let i = Math.max(1, pg.page-2); i <= Math.min(pg.pages, pg.page+2); i++) {
-      html += `<button class="page-btn ${i===pg.page?'active':''}" onclick="loadMobiles(${i})">${i}</button>`;
+    function searchMobiles() {
+      clearTimeout(window._mobileSearchTimer);
+      window._mobileSearchTimer = setTimeout(() => loadMobiles(1), 300);
     }
-    if (pg.page < pg.pages) html += `<button class="page-btn" onclick="loadMobiles(${pg.page+1})">›</button>`;
-    pagEl.innerHTML = html;
-  }
 
-  function searchMobiles() {
-    clearTimeout(window._mobileSearchTimer);
-    window._mobileSearchTimer = setTimeout(() => loadMobiles(1), 300);
-  }
+    function selectMobile(url) {
+      selectedMobileUrl = url;
+      const mobile = currentMobiles.find(item => item.url === url) || null;
+      renderMobileDetails(mobile);
+      document.querySelectorAll('#mobilesBody tr.clickable-row').forEach(row => row.classList.remove('selected-row'));
+      document.querySelector(`#mobilesBody tr.clickable-row[onclick="selectMobile('${escapeJs(url)}')"]`)?.classList.add('selected-row');
+    }
 
-  function selectMobile(url) {
-    selectedMobileUrl = url;
-    const mobile = currentMobiles.find(item => item.url === url) || null;
-    renderMobileDetails(mobile);
-    document.querySelectorAll('#mobilesBody tr.clickable-row').forEach(row => row.classList.remove('selected-row'));
-    document.querySelector(`#mobilesBody tr.clickable-row[onclick="selectMobile('${escapeJs(url)}')"]`)?.classList.add('selected-row');
-  }
+    function renderMobileDetails(mobile) {
+      const container = document.getElementById('mobileDetailContent');
+      if (!container) return;
 
-  function renderMobileDetails(mobile) {
-    const container = document.getElementById('mobileDetailContent');
-    if (!container) return;
-
-    if (!mobile) {
-      container.innerHTML = `
+      if (!mobile) {
+        container.innerHTML = `
         <div class="empty-state">
           <div class="icon">📱</div>
           <div>Select a mobile to view its details.</div>
         </div>`;
-      return;
-    }
+        return;
+      }
 
-    const meta = [
-      mobile.brand,
-      mobile.productCategory || mobile.category,
-      mobile.status,
-      mobile.price,
-      getSourceName(mobile) ? `source: ${getSourceName(mobile)}` : '',
-    ].filter(Boolean);
+      const meta = [
+        mobile.brand,
+        mobile.productCategory || mobile.category,
+        mobile.status,
+        mobile.price,
+        getSourceName(mobile) ? `source: ${getSourceName(mobile)}` : '',
+      ].filter(Boolean);
 
-    const tags = (mobile.tags || [])
-      .map(tag => `<span class="tag">${escapeHtml(tag)}</span>`)
-      .join('');
+      const tags = (mobile.tags || [])
+        .map(tag => `<span class="tag">${escapeHtml(tag)}</span>`)
+        .join('');
 
-    const specLines = [];
-    const keySpecs = mobile.keySpecs || {};
-    Object.entries(keySpecs).forEach(([k, v]) => {
-      specLines.push(`<div><span class="tag">${escapeHtml(k)}</span> ${escapeHtml(Array.isArray(v) ? v.join(' | ') : v)}</div>`);
-    });
+      const specLines = [];
+      const keySpecs = mobile.keySpecs || {};
+      Object.entries(keySpecs).forEach(([k, v]) => {
+        specLines.push(`<div><span class="tag">${escapeHtml(k)}</span> ${escapeHtml(Array.isArray(v) ? v.join(' | ') : v)}</div>`);
+      });
 
-    container.innerHTML = `
+      container.innerHTML = `
       ${mobile.imageUrl ? `<img class="article-detail-cover" src="${escapeHtml(mobile.imageUrl)}" alt="${escapeHtml(mobile.title || 'Mobile image')}">` : ''}
       <div class="article-detail-title">${escapeHtml(mobile.title || '(no title)')}</div>
       ${meta.length ? `<div class="article-detail-meta">${meta.map(item => `<span class="tag">${escapeHtml(item)}</span>`).join('')}</div>` : ''}
@@ -1616,173 +2056,224 @@
         <a class="btn btn-primary" href="${escapeHtml(mobile.url)}" target="_blank" rel="noopener noreferrer">Open Source</a>
         <button class="btn btn-secondary" onclick="copyArticleUrl('${escapeJs(mobile.url)}')">Copy URL</button>
       </div>`;
-  }
+    }
 
-  function setSelectedSource(value) {
-    selectedSource = value || '';
-    try {
-      localStorage.setItem('scrapeSource', selectedSource);
-    } catch {}
-  }
+    function setSelectedSource(value) {
+      selectedSource = value || '';
+      try {
+        localStorage.setItem('scrapeSource', selectedSource);
+      } catch { }
+    }
 
-  async function loadSources() {
-    const data = await api('/api/status');
-    availableSources = data.sources || [];
+    async function loadSources() {
+      const data = await api('/api/status');
+      availableSources = data.sources || [];
 
-    const sel = document.getElementById('sourceSelect');
-    if (!sel) return;
+      const sel = document.getElementById('sourceSelect');
+      if (!sel) return;
 
-    const saved = (() => {
-      try { return localStorage.getItem('scrapeSource') || ''; } catch { return ''; }
-    })();
+      const saved = (() => {
+        try { return localStorage.getItem('scrapeSource') || ''; } catch { return ''; }
+      })();
 
-    const options = ['all', ...(availableSources.length ? availableSources : ['prothomalo'])];
-    selectedSource = saved || 'all';
-    if (!options.includes(selectedSource)) selectedSource = 'all';
+      const options = ['all', ...(availableSources.length ? availableSources : ['prothomalo'])];
+      selectedSource = saved || 'all';
+      if (!options.includes(selectedSource)) selectedSource = 'all';
 
-    sel.innerHTML = options
-      .map(s => {
-        const label = s === 'all' ? 'All' : s;
-        return `<option value="${escapeHtml(s)}">${escapeHtml(label)}</option>`;
-      })
-      .join('');
+      sel.innerHTML = options
+        .map(s => {
+          const label = s === 'all' ? 'All' : s;
+          return `<option value="${escapeHtml(s)}">${escapeHtml(label)}</option>`;
+        })
+        .join('');
 
-    sel.value = selectedSource;
+      sel.value = selectedSource;
 
-    const filterOptions = ['<option value="">All sources</option>', ...availableSources.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`)].join('');
-    const articleSourceSel = document.getElementById('articleSourceFilter');
-    const mobileSourceSel = document.getElementById('mobileSourceFilter');
-    if (articleSourceSel) articleSourceSel.innerHTML = filterOptions;
-    if (mobileSourceSel) mobileSourceSel.innerHTML = filterOptions;
-  }
+      const filterOptions = ['<option value="">All sources</option>', ...availableSources.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`)].join('');
+      const articleSourceSel = document.getElementById('articleSourceFilter');
+      const mobileSourceSel = document.getElementById('mobileSourceFilter');
+      if (articleSourceSel) articleSourceSel.innerHTML = filterOptions;
+      if (mobileSourceSel) mobileSourceSel.innerHTML = filterOptions;
+    }
 
-  // ── Scraper trigger ──
-  async function triggerScrape() {
-    if (document.getElementById('triggerBtn').disabled) return;
-    await api('/api/scrape', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ source: selectedSource || undefined }),
-    });
-    showPage('scraper');
-    setTimeout(pollStatus, 500);
-  }
+    // ── Scraper trigger ──
+    async function triggerScrape() {
+      if (document.getElementById('triggerBtn').disabled) return;
+      await api('/api/scrape', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source: selectedSource || undefined }),
+      });
+      showPage('scraper');
+      setTimeout(pollStatus, 500);
+    }
 
-  // ── Clear cache ──
-  async function clearCacheConfirm() {
-    if (!confirm('Are you sure? This will delete all cached articles and mobiles.')) return;
-    await api('/api/cache', { method: 'DELETE' });
-    loadDashboard();
-  }
+    // ── Clear cache ──
+    async function clearCacheConfirm() {
+      if (!confirm('Are you sure? This will delete all cached articles and mobiles.')) return;
+      await api('/api/cache', { method: 'DELETE' });
+      loadDashboard();
+    }
 
-  // ── Cron ──
-  async function loadCronJobs() {
-    const data = await api('/api/status');
-    const cronList = document.getElementById('cronList');
-    const jobs = Array.isArray(data.activeCrons) ? data.activeCrons : [];
-    if (!jobs.length) {
-      cronList.innerHTML = '<span style="color:#aaa;font-size:0.82rem">No active cron jobs</span>';
-    } else {
-      cronList.innerHTML = jobs.map(j => `
+    // ── Cron ──
+    async function loadCronJobs() {
+      const data = await api('/api/status');
+      const cronList = document.getElementById('cronList');
+      const jobs = Array.isArray(data.activeCrons) ? data.activeCrons : [];
+      if (!jobs.length) {
+        cronList.innerHTML = '<span style="color:#aaa;font-size:0.82rem">No active cron jobs</span>';
+      } else {
+        cronList.innerHTML = jobs.map(j => `
         <div class="cron-row">
           <span class="tag green">Active</span>
           <span style="font-family:var(--mono);font-size:0.82rem;flex:1">${escapeHtml(j.name)} <span style="color:#888">(${escapeHtml(j.schedule)})</span></span>
           <button class="btn btn-danger" style="padding:0.3rem 0.6rem;font-size:0.75rem" onclick="stopCron('${escapeJs(j.name)}')">Stop</button>
         </div>`).join('');
-    }
-    await loadCronLogs();
-  }
-
-  async function addCron() {
-    const schedule = document.getElementById('cronSchedule').value.trim();
-    const name = document.getElementById('cronName').value.trim() || 'custom';
-    if (!schedule) return alert('Enter a cron schedule');
-    const r = await api('/api/cron', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ action: 'start', schedule, name })
-    });
-    if (r.error) return alert(r.error);
-    loadCronJobs();
-  }
-
-  async function stopCron(name) {
-    await api('/api/cron', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ action: 'stop', name })
-    });
-    loadCronJobs();
-  }
-
-  async function loadCronLogs() {
-    const data = await api('/api/cron/logs?limit=120');
-    const box = document.getElementById('cronLogBox');
-    if (!box) return;
-    const logs = data.logs || [];
-    if (!logs.length) {
-      box.innerHTML = '<span style="color:#888">No cron logs yet.</span>';
-      return;
+      }
+      await loadCronLogs();
     }
 
-    box.innerHTML = logs.map(entry => {
-      const ts = entry.time ? entry.time.slice(11, 19) : '--:--:--';
-      const event = entry.event || 'cron-event';
-      const job = entry.job ? ` [${escapeHtml(entry.job)}]` : '';
-      const summary = entry.error
-        ? `<span style="color:#ff6060">${escapeHtml(entry.error)}</span>`
-        : `<span style="color:#888">ok:${entry.success ?? 0}/${entry.total ?? 0} pushed:${entry.pushedArticles ?? 0}+${entry.pushedMobiles ?? 0}</span>`;
-      return `<div class="log-entry"><span class="ts">[${ts}]</span> <span class="stage-listing">${escapeHtml(event)}</span>${job} ${summary}</div>`;
-    }).join('');
-  }
+    async function addCron() {
+      const schedule = document.getElementById('cronSchedule').value.trim();
+      const name = document.getElementById('cronName').value.trim() || 'custom';
+      if (!schedule) return alert('Enter a cron schedule');
+      const r = await api('/api/cron', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'start', schedule, name })
+      });
+      if (r.error) return alert(r.error);
+      loadCronJobs();
+    }
 
-  async function clearCronLogs() {
-    await api('/api/cron/logs', { method: 'DELETE' });
-    await loadCronLogs();
-  }
+    async function stopCron(name) {
+      await api('/api/cron', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'stop', name })
+      });
+      loadCronJobs();
+    }
 
-  async function loadPushLogs() {
-    const box = document.getElementById('pushLogBox');
-    if (!box) return;
-
-    try {
-      const data = await api('/api/push/logs?limit=150');
+    async function loadCronLogs() {
+      const data = await api('/api/cron/logs?limit=120');
+      const box = document.getElementById('cronLogBox');
+      if (!box) return;
       const logs = data.logs || [];
       if (!logs.length) {
-        box.innerHTML = '<span style="color:#888">No push logs yet.</span>';
+        box.innerHTML = '<span style="color:#888">No cron logs yet.</span>';
         return;
       }
 
       box.innerHTML = logs.map(entry => {
         const ts = entry.time ? entry.time.slice(11, 19) : '--:--:--';
-        const kind = entry.kind || 'unknown';
-        const sourceKey = entry.sourceKey ? ` [${escapeHtml(entry.sourceKey)}]` : '';
-        const status = entry.status || (entry.success ? 'success' : 'failed');
-        const count = Number(entry.count ?? entry.itemCount ?? 0);
-        const statusColor = status === 'success' ? '#a0ffa0' : (status === 'failed' ? '#ff6060' : '#60b0ff');
-        const tail = entry.error
+        const event = entry.event || 'cron-event';
+        const job = entry.job ? ` [${escapeHtml(entry.job)}]` : '';
+        const summary = entry.error
           ? `<span style="color:#ff6060">${escapeHtml(entry.error)}</span>`
-          : `<span style="color:#888">${escapeHtml(String(entry.message || ''))}</span>`;
-
-        return `<div class="log-entry"><span class="ts">[${ts}]</span> <span style="color:${statusColor}">${escapeHtml(status)}</span> <span class="stage-listing">${escapeHtml(kind)}</span>${sourceKey} <span style="color:#aaa">count:${count}</span> ${tail}</div>`;
+          : `<span style="color:#888">ok:${entry.success ?? 0}/${entry.total ?? 0} pushed:${entry.pushedArticles ?? 0}+${entry.pushedMobiles ?? 0}</span>`;
+        return `<div class="log-entry"><span class="ts">[${ts}]</span> <span class="stage-listing">${escapeHtml(event)}</span>${job} ${summary}</div>`;
       }).join('');
-    } catch {
-      box.innerHTML = '<span style="color:#ff8080">Push logs unavailable.</span>';
     }
-  }
 
-  async function clearPushLogs() {
-    await api('/api/push/logs', { method: 'DELETE' });
-    await loadPushLogs();
-  }
+    async function clearCronLogs() {
+      await api('/api/cron/logs', { method: 'DELETE' });
+      await loadCronLogs();
+    }
 
-  // ── Init ──
-  loadDashboard();
-  loadSources();
-  loadMainSettings();
-  loadPushLogs();
-  pollStatus();
-  statusPollInterval = setInterval(pollStatus, 3000);
-</script>
+    async function loadPushLogs() {
+      const box = document.getElementById('pushLogBox');
+      if (!box) return;
+
+      try {
+        const data = await api('/api/push/logs?limit=150');
+        const logs = data.logs || [];
+        if (!logs.length) {
+          box.innerHTML = '<span style="color:#888">No push logs yet.</span>';
+          return;
+        }
+
+        box.innerHTML = logs.map(entry => {
+          const ts = entry.time ? entry.time.slice(11, 19) : '--:--:--';
+          const kind = entry.kind || 'unknown';
+          const sourceKey = entry.sourceKey ? ` [${escapeHtml(entry.sourceKey)}]` : '';
+          const status = entry.status || (entry.success ? 'success' : 'failed');
+          const count = Number(entry.count ?? entry.itemCount ?? 0);
+          const statusColor = status === 'success' ? '#a0ffa0' : (status === 'failed' ? '#ff6060' : '#60b0ff');
+          const tail = entry.error
+            ? `<span style="color:#ff6060">${escapeHtml(entry.error)}</span>`
+            : `<span style="color:#888">${escapeHtml(String(entry.message || ''))}</span>`;
+
+          return `<div class="log-entry"><span class="ts">[${ts}]</span> <span style="color:${statusColor}">${escapeHtml(status)}</span> <span class="stage-listing">${escapeHtml(kind)}</span>${sourceKey} <span style="color:#aaa">count:${count}</span> ${tail}</div>`;
+        }).join('');
+      } catch {
+        box.innerHTML = '<span style="color:#ff8080">Push logs unavailable.</span>';
+      }
+    }
+
+    async function clearPushLogs() {
+      await api('/api/push/logs', { method: 'DELETE' });
+      await loadPushLogs();
+    }
+
+    async function manualPushArticles() {
+      const btn = document.getElementById('manualPushArticlesBtn');
+      if (!btn) return;
+
+      const originalText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = 'Pushing...';
+
+      try {
+        const response = await api('/api/push/manual', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'articles' }),
+        });
+
+        await loadPushLogs();
+        alert(response.message || 'Articles pushed successfully');
+      } catch (e) {
+        alert('Failed to push articles: ' + (e.message || 'Unknown error'));
+      } finally {
+        btn.disabled = false;
+        btn.textContent = originalText;
+      }
+    }
+
+    async function manualPushMobiles() {
+      const btn = document.getElementById('manualPushMobilesBtn');
+      if (!btn) return;
+
+      const originalText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = 'Pushing...';
+
+      try {
+        const response = await api('/api/push/manual', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'mobiles' }),
+        });
+
+        await loadPushLogs();
+        alert(response.message || 'Mobiles pushed successfully');
+      } catch (e) {
+        alert('Failed to push mobiles: ' + (e.message || 'Unknown error'));
+      } finally {
+        btn.disabled = false;
+        btn.textContent = originalText;
+      }
+    }
+
+    // ── Init ──
+    loadDashboard();
+    loadSources();
+    loadMainSettings();
+    loadPushLogs();
+    pollStatus();
+    statusPollInterval = setInterval(pollStatus, 3000);
+  </script>
 </body>
+
 </html>

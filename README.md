@@ -94,6 +94,8 @@ When a push endpoint is configured, newly-added items are POSTed after a scrape 
   "trigger": "manual",
   "pushedAt": "2026-04-25T00:00:00.000Z",
   "count": 10,
+  "contentType": "article",
+  "items": [],
   "articles": []
 }
 ```
