@@ -1,340 +1,500 @@
-const { app, BrowserWindow, Menu, dialog, ipcMain } = require('electron');
+const { app, BrowserWindow, Menu, dialog, ipcMain, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { spawn } = require('child_process');
+const { fork } = require('child_process');
 const net = require('net');
 const http = require('http');
 
-let mainWindow;
-let serverProcess;
 const SERVER_PORT = 9999;
-const SERVER_URL = `http://localhost:${SERVER_PORT}`;
+const SERVER_URL = `http://127.0.0.1:${SERVER_PORT}`;
+const STARTUP_TIMEOUT_MS = 15000;
+const SERVER_PING_TIMEOUT_MS = 1500;
+const isDevMode = process.argv.includes('--dev') || !app.isPackaged;
+const serverEntryRelativePath = 'index.js';
+const iconPath = path.join(__dirname, 'assets', 'icon.png');
 
-// Path to the main index.js
-const mainScriptPath = path.join(__dirname, 'index.js');
-
-// Check if port is in use
-function isPortInUse(port) {
-    return new Promise((resolve) => {
-        const server = net.createServer()
-            .once('error', (err) => {
-                if (err.code === 'EADDRINUSE') {
-                    resolve(true);
-                } else {
-                    resolve(false);
-                }
-            })
-            .once('listening', () => {
-                server.close();
-                resolve(false);
-            })
-            .listen(port);
-    });
+if (app.isPackaged && process.platform === 'win32') {
+  process.env.BROX_AUTO_INSTALL_STARTUP = '1';
 }
 
-function createWindow() {
-    const windowConfig = {
-        width: 1400,
-        height: 900,
-        minWidth: 800,
-        minHeight: 600,
-        webPreferences: {
-            preload: path.join(__dirname, 'preload.js'),
-            nodeIntegration: false,
-            contextIsolation: true,
-            enableRemoteModule: false,
-        },
+let mainWindow = null;
+let serverProcess = null;
+let inProcessServerStarted = false;
+let appIsQuitting = false;
+
+function getWindowStatePath() {
+  return path.join(app.getPath('userData'), 'window-state.json');
+}
+
+function loadWindowState() {
+  const fallback = {
+    width: 1400,
+    height: 900,
+  };
+
+  try {
+    const raw = fs.readFileSync(getWindowStatePath(), 'utf8');
+    const parsed = JSON.parse(raw);
+    const width = Number.parseInt(parsed.width, 10);
+    const height = Number.parseInt(parsed.height, 10);
+
+    return {
+      width: Number.isFinite(width) && width >= 800 ? width : fallback.width,
+      height: Number.isFinite(height) && height >= 600 ? height : fallback.height,
     };
+  } catch {
+    return fallback;
+  }
+}
 
-    // Add icon if it exists
-    const iconPath = path.join(__dirname, 'assets', 'icon.png');
-    if (fs.existsSync(iconPath)) {
-        windowConfig.icon = iconPath;
-    }
+function saveWindowState() {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    return;
+  }
 
-    mainWindow = new BrowserWindow(windowConfig);
+  try {
+    const bounds = mainWindow.getBounds();
+    fs.mkdirSync(path.dirname(getWindowStatePath()), { recursive: true });
+    fs.writeFileSync(
+      getWindowStatePath(),
+      JSON.stringify({ width: bounds.width, height: bounds.height }, null, 2),
+      'utf8'
+    );
+  } catch (err) {
+    console.warn('[Electron] Could not save window state:', err.message);
+  }
+}
 
-    mainWindow.loadURL(SERVER_URL);
+function resolveServerScriptPath() {
+  const candidates = [
+    path.join(app.getAppPath(), serverEntryRelativePath),
+    path.join(__dirname, serverEntryRelativePath),
+    path.join(process.resourcesPath || '', 'app.asar.unpacked', serverEntryRelativePath),
+  ];
 
-    // Open DevTools in development
-    mainWindow.webContents.openDevTools({ mode: 'detach' });
+  const existingPath = candidates.find((candidatePath) => fs.existsSync(candidatePath));
+  return existingPath || candidates[0];
+}
 
-    mainWindow.on('closed', () => {
-        mainWindow = null;
-        // Don't kill the server when window closes
-        // User can reopen the window and server continues running
-        console.log('Window closed, but server continues running');
+function startServerInProcess(serverScriptPath) {
+  if (inProcessServerStarted) {
+    return;
+  }
+
+  require(serverScriptPath);
+  inProcessServerStarted = true;
+}
+
+function isPortInUse(port) {
+  return new Promise((resolve) => {
+    const server = net.createServer()
+      .once('error', (err) => resolve(err.code === 'EADDRINUSE'))
+      .once('listening', () => server.close(() => resolve(false)))
+      .listen(port, '127.0.0.1');
+  });
+}
+
+function pingServer() {
+  return new Promise((resolve) => {
+    const req = http.get(SERVER_URL, (res) => {
+      res.resume();
+      resolve(res.statusCode >= 200 && res.statusCode < 500);
     });
 
-    // Create menu
-    createApplicationMenu();
+    req.on('error', () => resolve(false));
+    req.setTimeout(SERVER_PING_TIMEOUT_MS, () => {
+      req.destroy();
+      resolve(false);
+    });
+  });
 }
 
 function createApplicationMenu() {
-    const template = [
+  const template = [
+    {
+      label: 'ফাইল',
+      submenu: [
         {
-            label: 'ফাইল',
-            submenu: [
-                {
-                    label: 'প্রস্থান',
-                    accelerator: 'CmdOrCtrl+Q',
-                    click: () => {
-                        app.quit();
-                    },
-                },
-            ],
+          label: 'রিফ্রেশ',
+          accelerator: 'F5',
+          click: () => mainWindow?.webContents.reload(),
         },
         {
-            label: 'সম্পাদনা',
-            submenu: [
-                { role: 'undo' },
-                { role: 'redo' },
-                { type: 'separator' },
-                { role: 'cut' },
-                { role: 'copy' },
-                { role: 'paste' },
-            ],
+          label: 'ড্যাশবোর্ড খুলুন',
+          accelerator: 'CmdOrCtrl+L',
+          click: () => shell.openExternal(SERVER_URL),
+        },
+        { type: 'separator' },
+        {
+          label: 'প্রস্থান',
+          accelerator: 'CmdOrCtrl+Q',
+          click: () => app.quit(),
+        },
+      ],
+    },
+    {
+      label: 'সম্পাদনা',
+      submenu: [
+        { role: 'undo' },
+        { role: 'redo' },
+        { type: 'separator' },
+        { role: 'cut' },
+        { role: 'copy' },
+        { role: 'paste' },
+        { role: 'selectAll' },
+      ],
+    },
+    {
+      label: 'দৃশ্য',
+      submenu: [
+        { role: 'reload' },
+        { role: 'forceReload' },
+        { role: 'togglefullscreen' },
+        ...(isDevMode ? [{ role: 'toggleDevTools' }] : []),
+      ],
+    },
+    {
+      label: 'সহায়তা',
+      submenu: [
+        {
+          label: 'লোকাল ড্যাশবোর্ড ব্রাউজারে খুলুন',
+          click: () => shell.openExternal(SERVER_URL),
         },
         {
-            label: 'দৃশ্য',
-            submenu: [
-                { role: 'reload' },
-                { role: 'forceReload' },
-                { role: 'toggleDevTools' },
-            ],
+          label: 'সম্পর্কে',
+          click: () => {
+            dialog.showMessageBox(mainWindow, {
+              type: 'info',
+              title: 'Brox Scraper সম্পর্কে',
+              message: 'Brox Scraper',
+              detail: `সংস্করণ ${app.getVersion()}\n\nলোকাল Windows dashboard app for scraping news and mobile data.`,
+            });
+          },
         },
-        {
-            label: 'সাহায্য',
-            submenu: [
-                {
-                    label: 'সম্পর্কে',
-                    click: () => {
-                        dialog.showMessageBox(mainWindow, {
-                            type: 'info',
-                            title: 'Brox Scraper সম্পর্কে',
-                            message: 'Brox Scraper',
-                            detail: 'সংস্করণ 1.0.0\n\nপাঁচ টি বাংলা নিউজ সাইট এবং মোবাইল দোকান থেকে সংবাদ সংগ্রহ করে।',
-                        });
-                    },
-                },
-            ],
-        },
-    ];
+      ],
+    },
+  ];
 
-    const menu = Menu.buildFromTemplate(template);
-    Menu.setApplicationMenu(menu);
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }
 
-function startServer() {
-    return new Promise((resolve, reject) => {
-        (async () => {
-            try {
-                // Check if server is already running
-                if (serverProcess && !serverProcess.killed) {
-                    console.log('[Electron] Server already running');
-                    resolve();
-                    return;
-                }
+function createWindow() {
+  const windowState = loadWindowState();
+  const windowConfig = {
+    width: windowState.width,
+    height: windowState.height,
+    minWidth: 900,
+    minHeight: 650,
+    show: false,
+    backgroundColor: '#f5f0e8',
+    title: 'Brox Scraper',
+    autoHideMenuBar: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: false,
+    },
+  };
 
-                console.log('[Electron] Starting server...');
-                console.log('[Electron] Main script path:', mainScriptPath);
-                console.log('[Electron] Server port:', SERVER_PORT);
-                console.log('[Electron] Working directory:', __dirname);
+  if (fs.existsSync(iconPath)) {
+    windowConfig.icon = iconPath;
+  }
 
-                // Check if port is in use
-                const portInUse = await isPortInUse(SERVER_PORT);
-                console.log('[Electron] Port', SERVER_PORT, 'in use:', portInUse);
+  mainWindow = new BrowserWindow(windowConfig);
 
-                if (portInUse) {
-                    console.log(`[Electron] Port ${SERVER_PORT} already in use, killing existing node processes...`);
-                    // Try to kill any existing process on this port
-                    if (process.platform === 'win32') {
-                        spawn('taskkill', ['/F', '/IM', 'node.exe'], { stdio: 'ignore' });
-                    } else {
-                        spawn('killall', ['node'], { stdio: 'ignore' });
-                    }
-                    // Wait a bit for the port to be freed
-                    await new Promise(r => setTimeout(r, 2000));
-                }
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    shell.openExternal(url);
+    return { action: 'deny' };
+  });
 
-                console.log('[Electron] Spawning Node.js process for:', mainScriptPath);
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    if (!url.startsWith(SERVER_URL)) {
+      event.preventDefault();
+      shell.openExternal(url);
+    }
+  });
 
-                // Start the Node.js server
-                serverProcess = spawn('node', [mainScriptPath], {
-                    stdio: ['inherit', 'pipe', 'pipe'],
-                    shell: false,
-                    detached: false,
-                    cwd: __dirname,
-                    env: { ...process.env },
-                });
+  mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
+    if (errorCode === -3) {
+      return;
+    }
 
-                console.log('[Electron] Node process spawned, PID:', serverProcess.pid);
+    dialog.showErrorBox(
+      'পেজ লোড ব্যর্থ',
+      `Dashboard load করা যায়নি.\nURL: ${validatedURL}\nError: ${errorDescription} (${errorCode})`
+    );
+  });
 
-                if (!serverProcess.pid) {
-                    throw new Error('Failed to spawn Node.js process - no PID');
-                }
+  mainWindow.webContents.on('render-process-gone', (_event, details) => {
+    console.error('[Electron] Renderer process gone:', details);
+    dialog.showErrorBox(
+      'উইন্ডো বন্ধ হয়ে গেছে',
+      `Renderer process বন্ধ হয়েছে (${details.reason || 'unknown'}). অ্যাপটি আবার চালু করুন।`
+    );
+  });
 
-                let isResolved = false;
-                let hasOutput = false;
+  mainWindow.once('ready-to-show', () => {
+    if (!mainWindow) {
+      return;
+    }
 
-                serverProcess.stdout.on('data', (data) => {
-                    hasOutput = true;
-                    const output = data.toString().trim();
-                    console.log(`[Server stdout] ${output}`);
+    mainWindow.show();
+    mainWindow.focus();
 
-                    if (!isResolved && (output.includes('listening') || output.includes('running') || output.includes('9999') || output.includes('http://'))) {
-                        console.log('[Electron] Server ready detected');
-                        isResolved = true;
-                        resolve();
-                    }
-                });
+    if (isDevMode) {
+      mainWindow.webContents.openDevTools({ mode: 'detach' });
+    }
+  });
 
-                serverProcess.stderr.on('data', (data) => {
-                    hasOutput = true;
-                    const output = data.toString().trim();
-                    console.error(`[Server stderr] ${output}`);
-                });
+  mainWindow.on('resize', saveWindowState);
+  mainWindow.on('move', saveWindowState);
+  mainWindow.on('closed', () => {
+    saveWindowState();
+    mainWindow = null;
+  });
 
-                serverProcess.on('error', (err) => {
-                    console.error('[Electron] Process error:', err);
-                    if (!isResolved) {
-                        isResolved = true;
-                        reject(new Error(`Process error: ${err.message}`));
-                    }
-                });
-
-                serverProcess.on('exit', (code, signal) => {
-                    console.log(`[Electron] Server process exited with code ${code}, signal ${signal}`);
-                    if (!isResolved && code !== 0) {
-                        isResolved = true;
-                        reject(new Error(`Process exited with code ${code}`));
-                    }
-                });
-
-                // Health check - try connecting to server
-                const healthCheck = setInterval(() => {
-                    if (isResolved) {
-                        clearInterval(healthCheck);
-                        return;
-                    }
-
-                    const req = http.get(`http://localhost:${SERVER_PORT}`, (res) => {
-                        console.log('[Electron] Health check successful, HTTP status:', res.statusCode);
-                        clearInterval(healthCheck);
-                        if (!isResolved) {
-                            isResolved = true;
-                            resolve();
-                        }
-                    });
-
-                    req.on('error', (e) => {
-                        // Server not ready yet - continue checking
-                    });
-
-                    req.setTimeout(1000);
-                }, 500);
-
-                // Timeout - assume server started after 15 seconds
-                setTimeout(() => {
-                    if (!isResolved) {
-                        clearInterval(healthCheck);
-                        console.log('[Electron] Server startup timeout (15s)');
-                        console.log('[Electron] Process had output:', hasOutput);
-                        console.log('[Electron] Process alive:', serverProcess && !serverProcess.killed);
-
-                        if (hasOutput && serverProcess && !serverProcess.killed) {
-                            console.log('[Electron] Assuming server is running');
-                            isResolved = true;
-                            resolve();
-                        } else {
-                            reject(new Error('Server startup timeout - no output received'));
-                        }
-                    }
-                }, 15000);
-            } catch (err) {
-                console.error('[Electron] startServer error:', err);
-                if (!isResolved) {
-                    reject(err);
-                }
-            }
-        })();
-    });
+  createApplicationMenu();
+  mainWindow.loadURL(SERVER_URL);
 }
 
 function stopServer() {
-    if (serverProcess) {
-        serverProcess.kill();
-        serverProcess = null;
-    }
+  if (inProcessServerStarted) {
+    console.log('[Electron] Server is running in-process and will stop on app exit');
+    return;
+  }
+
+  if (!serverProcess) {
+    return;
+  }
+
+  const processToStop = serverProcess;
+  serverProcess = null;
+
+  try {
+    processToStop.kill('SIGTERM');
+  } catch (err) {
+    console.warn('[Electron] Could not stop server cleanly:', err.message);
+  }
 }
 
-// IPC Handlers
-ipcMain.handle('app-version', () => {
-    return app.getVersion();
-});
+function startServer() {
+  return new Promise((resolve, reject) => {
+    let isResolved = false;
+    let healthCheck = null;
+    let startupTimeout = null;
+    const serverScriptPath = resolveServerScriptPath();
 
-ipcMain.handle('app-name', () => {
-    return 'Brox Scraper';
-});
+    const cleanup = () => {
+      if (healthCheck) {
+        clearInterval(healthCheck);
+        healthCheck = null;
+      }
+      if (startupTimeout) {
+        clearTimeout(startupTimeout);
+        startupTimeout = null;
+      }
+    };
 
-app.on('ready', async () => {
-    try {
-        console.log('[Electron] App ready, starting server...');
-        console.log('[Electron] index.js path:', mainScriptPath);
-        console.log('[Electron] index.js exists:', fs.existsSync(mainScriptPath));
+    const resolveOnce = () => {
+      if (isResolved) {
+        return;
+      }
 
-        await startServer();
-        console.log('[Electron] Server started successfully');
+      isResolved = true;
+      cleanup();
+      resolve();
+    };
 
-        // Wait a bit for server to fully start
-        await new Promise(resolve => setTimeout(resolve, 2000));
+    const rejectOnce = (err) => {
+      if (isResolved) {
+        return;
+      }
 
-        console.log('[Electron] Creating window...');
-        createWindow();
-        console.log('[Electron] Window created successfully');
-    } catch (err) {
-        console.error('[Electron] Startup error:', err);
-        console.error('[Electron] Error message:', err.message);
-        console.error('[Electron] Error stack:', err.stack);
+      isResolved = true;
+      cleanup();
+      reject(err);
+    };
 
-        // Show error with null parent (will use system default)
-        dialog.showErrorBox('স্টার্টআপ ত্রুটি', 'অ্যাপ্লিকেশন শুরু করতে ব্যর্থ হয়েছে: ' + (err.message || 'অজানা ত্রুটি'));
-        app.quit();
+    (async () => {
+      try {
+        if (serverProcess && !serverProcess.killed) {
+          console.log('[Electron] Server process already running');
+          resolveOnce();
+          return;
+        }
+
+        const portInUse = await isPortInUse(SERVER_PORT);
+        if (portInUse) {
+          const reachable = await pingServer();
+          if (reachable) {
+            console.log('[Electron] Reusing existing local server on port', SERVER_PORT);
+            resolveOnce();
+            return;
+          }
+
+          rejectOnce(new Error(`Port ${SERVER_PORT} is already in use by another process`));
+          return;
+        }
+
+        const startServerInSameProcess = (reason) => {
+          if (inProcessServerStarted) {
+            return true;
+          }
+
+          try {
+            console.warn(
+              `[Electron] Background server process failed (${reason?.message || reason}). Falling back to in-process server startup.`
+            );
+            startServerInProcess(serverScriptPath);
+            resolveOnce();
+            return true;
+          } catch (fallbackErr) {
+            console.error('[Electron] In-process fallback failed:', fallbackErr);
+            return false;
+          }
+        };
+
+        if (!fs.existsSync(serverScriptPath)) {
+          rejectOnce(new Error(`Server entry not found: ${serverScriptPath}`));
+          return;
+        }
+
+        console.log('[Electron] Starting background server:', serverScriptPath);
+        serverProcess = fork(serverScriptPath, [], {
+          stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
+          cwd: __dirname,
+          env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+          execArgv: [],
+          windowsHide: true,
+        });
+        console.log('[Electron] Background server PID:', serverProcess.pid ?? 'unknown');
+
+        serverProcess.stdout.on('data', (data) => {
+          console.log(`[Server stdout] ${data.toString().trim()}`);
+        });
+
+        serverProcess.stderr.on('data', (data) => {
+          console.error(`[Server stderr] ${data.toString().trim()}`);
+        });
+
+        serverProcess.once('error', (err) => {
+          if (startServerInSameProcess(err)) {
+            return;
+          }
+          rejectOnce(new Error(`Server process error: ${err.message}`));
+        });
+
+        serverProcess.once('exit', (code, signal) => {
+          if (!isResolved) {
+            if (startServerInSameProcess(`exit code ${code}${signal ? ` (signal: ${signal})` : ''}`)) {
+              return;
+            }
+            rejectOnce(new Error(`Server exited early with code ${code}${signal ? ` (signal: ${signal})` : ''}`));
+            return;
+          }
+
+          console.log(`[Electron] Server exited with code ${code}, signal ${signal}`);
+        });
+
+        healthCheck = setInterval(async () => {
+          const reachable = await pingServer();
+          if (reachable) {
+            console.log('[Electron] Server health check succeeded');
+            resolveOnce();
+          }
+        }, 500);
+
+        startupTimeout = setTimeout(() => {
+          if (startServerInSameProcess('startup timeout')) {
+            return;
+          }
+          rejectOnce(new Error('Server startup timeout - dashboard did not respond in time'));
+        }, STARTUP_TIMEOUT_MS);
+      } catch (err) {
+        rejectOnce(err);
+      }
+    })();
+  });
+}
+
+ipcMain.handle('app-version', () => app.getVersion());
+ipcMain.handle('app-name', () => 'Brox Scraper');
+
+const gotSingleInstanceLock = app.requestSingleInstanceLock();
+if (!gotSingleInstanceLock) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) {
+        mainWindow.restore();
+      }
+      mainWindow.show();
+      mainWindow.focus();
+      return;
     }
+
+    createWindow();
+  });
+}
+
+app.on('before-quit', () => {
+  appIsQuitting = true;
+  saveWindowState();
+  stopServer();
+});
+
+app.whenReady().then(async () => {
+  try {
+    if (process.platform === 'win32') {
+      app.setAppUserModelId('com.broxscraper.app');
+    }
+
+    await startServer();
+    createWindow();
+  } catch (err) {
+    console.error('[Electron] Startup error:', err);
+    dialog.showErrorBox(
+      'স্টার্টআপ ত্রুটি',
+      `অ্যাপ্লিকেশন শুরু করতে ব্যর্থ হয়েছে: ${err.message || 'অজানা ত্রুটি'}`
+    );
+    app.quit();
+  }
 });
 
 app.on('window-all-closed', () => {
-    // On Windows and Linux, do not quit when window closes
-    // Only quit on macOS when all windows are closed
-    if (process.platform === 'darwin') {
-        app.quit();
-    }
-    // On Windows/Linux, keep the app running
+  if (process.platform !== 'darwin') {
+    app.quit();
+  }
 });
 
 app.on('activate', async () => {
-    // On macOS, re-create window and restart server if needed
-    try {
-        if (mainWindow === null) {
-            // Check if server is still running
-            if (!serverProcess || serverProcess.killed) {
-                console.log('Server not running, restarting...');
-                await startServer();
-                await new Promise(resolve => setTimeout(resolve, 1000));
-            }
-            createWindow();
-        }
-    } catch (err) {
-        console.error('Error on activate:', err);
+  if (BrowserWindow.getAllWindows().length > 0) {
+    return;
+  }
+
+  try {
+    const reachable = await pingServer();
+    if (!reachable && (!serverProcess || serverProcess.killed)) {
+      await startServer();
     }
+    createWindow();
+  } catch (err) {
+    console.error('[Electron] Activate error:', err);
+    dialog.showErrorBox('উইন্ডো খুলতে সমস্যা', err.message || 'অজানা ত্রুটি');
+  }
 });
 
-app.on('before-quit', () => {
-    stopServer();
-});
-
-// Handle any uncaught exceptions
 process.on('uncaughtException', (err) => {
-    console.error('Uncaught exception:', err);
-    dialog.showErrorBox('ত্রুটি', 'একটি অপ্রত্যাশিত ত্রুটি ঘটেছে।');
+  console.error('[Electron] Uncaught exception:', err);
+  dialog.showErrorBox('অপ্রত্যাশিত ত্রুটি', err.message || 'অজানা ত্রুটি');
+
+  if (!appIsQuitting) {
+    stopServer();
+  }
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('[Electron] Unhandled rejection:', reason);
 });

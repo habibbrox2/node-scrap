@@ -1,0 +1,17 @@
+{
+  "pushEndpointUrl": "https://broxlab.online/api/push/data",
+  "pushArticlesEndpointUrl": "https://broxlab.online/api/push/articles",
+  "pushMobilesEndpointUrl": "https://broxlab.online/api/push/mobiles",
+  "pushEndpointHeaders": {
+    "Authorization": "Bearer brox_scraper_push_e1ab91756330e90d6be7bfbf39eab9c1"
+  },
+  "pushEnabled": true,
+  "pushArticlesEnabled": true,
+  "pushMobilesEnabled": true,
+  "scrapeMaxItems": 10,
+  "scrapeDelayMs": 300,
+  "cacheMaxArticles": 500,
+  "cacheMaxMobiles": 500,
+  "cacheAutoClearEnabled": false,
+  "cacheRetentionHours": 0
+}

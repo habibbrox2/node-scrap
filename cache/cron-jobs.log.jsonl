@@ -81,3 +81,5 @@
 {"time":"2026-04-25T16:00:47.427Z","event":"cron-success","job":"hourly","schedule":"0 * * * *","trigger":"cron","total":10,"success":10,"failed":0,"pushedArticles":0,"pushedMobiles":0}
 {"time":"2026-04-25T17:00:00.027Z","event":"cron-triggered","job":"hourly","schedule":"0 * * * *","trigger":"cron"}
 {"time":"2026-04-25T17:01:28.704Z","event":"cron-success","job":"hourly","schedule":"0 * * * *","trigger":"cron","total":10,"success":10,"failed":0,"pushedArticles":99,"pushedMobiles":10}
+{"time":"2026-04-25T18:00:00.020Z","event":"cron-triggered","job":"hourly","schedule":"0 * * * *","trigger":"cron"}
+{"time":"2026-04-25T18:01:45.713Z","event":"cron-success","job":"hourly","schedule":"0 * * * *","trigger":"cron","total":10,"success":10,"failed":0,"pushedArticles":108,"pushedMobiles":10}

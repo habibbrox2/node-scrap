@@ -65,6 +65,23 @@ if (argSet.has('--remove-startup')) {
   }
 }
 
+function ensureWindowsStartupShortcut() {
+  if (process.platform !== 'win32') return;
+  if (process.env.BROX_AUTO_INSTALL_STARTUP !== '1') return;
+
+  try {
+    const startup = getStartupShortcutState();
+    if (!startup.installed) {
+      const result = installStartupShortcut(process.execPath);
+      console.log(`[Startup] Auto-installed shortcut at ${result.shortcutPath}`);
+    }
+  } catch (err) {
+    console.error('[Startup] Auto-install failed:', err.message);
+  }
+}
+
+ensureWindowsStartupShortcut();
+
 let scrapeStatus = {
   running: false,
   trigger: null,
@@ -177,6 +194,99 @@ function parseJsonEnv(value, fallback = {}) {
   }
 }
 
+const BN_DIGITS = {
+  '\u09E6': '0',
+  '\u09E7': '1',
+  '\u09E8': '2',
+  '\u09E9': '3',
+  '\u09EA': '4',
+  '\u09EB': '5',
+  '\u09EC': '6',
+  '\u09ED': '7',
+  '\u09EE': '8',
+  '\u09EF': '9',
+};
+
+const BN_MONTHS = {
+  '\u099C\u09BE\u09A8\u09C1\u09DF\u09BE\u09B0\u09BF': '01', // জানুয়ারি
+  '\u099C\u09BE\u09A8\u09C1\u09AF\u09BC\u09BE\u09B0\u09BF': '01', // জানুয়ারি
+  '\u09AB\u09C7\u09AC\u09CD\u09B0\u09C1\u09DF\u09BE\u09B0\u09BF': '02', // ফেব্রুয়ারি
+  '\u09AB\u09C7\u09AC\u09CD\u09B0\u09C1\u09AF\u09BC\u09BE\u09B0\u09BF': '02', // ফেব্রুয়ারি
+  '\u09AE\u09BE\u09B0\u09CD\u099A': '03',
+  '\u098F\u09AA\u09CD\u09B0\u09BF\u09B2': '04',
+  '\u09AE\u09C7': '05',
+  '\u099C\u09C1\u09A8': '06',
+  '\u099C\u09C1\u09B2\u09BE\u0987': '07',
+  '\u0986\u0997\u09B8\u09CD\u099F': '08',
+  '\u09B8\u09C7\u09AA\u09CD\u099F\u09C7\u09AE\u09CD\u09AC\u09B0': '09',
+  '\u0985\u0995\u09CD\u099F\u09CB\u09AC\u09B0': '10',
+  '\u09A8\u09AD\u09C7\u09AE\u09CD\u09AC\u09B0': '11',
+  '\u09A1\u09BF\u09B8\u09C7\u09AE\u09CD\u09AC\u09B0': '12',
+};
+
+function normalizeBanglaDigits(value) {
+  return String(value || '').replace(/[\u09E6-\u09EF]/g, ch => BN_DIGITS[ch] || ch);
+}
+
+function toTimestamp(value) {
+  const ts = Date.parse(String(value || ''));
+  return Number.isNaN(ts) ? 0 : ts;
+}
+
+function parseBanglaPublishedText(value) {
+  const raw = normalizeBanglaDigits(value)
+    .replace(/\s+/g, ' ')
+    .replace(/[：]/g, ':')
+    .trim();
+  if (!raw) return 0;
+
+  // Examples:
+  // "১৮ এপ্রিল ২০২৬"
+  // "প্রকাশ: ২৪ এপ্রিল ২০২৬, ১৭:৪২"
+  // "আপডেট : ১৮ এপ্রিল ২০২৬, ১৬:৩৩"
+  const pattern = /(?:(?:প্রকাশ|আপডেট|Published|Updated)\s*:?\s*)?(\d{1,2})\s+([^\s,]+)\s+(\d{4})(?:,\s*(\d{1,2})\s*:\s*(\d{2}))?/i;
+  const m = raw.match(pattern);
+  if (!m) return 0;
+
+  const day = String(parseInt(m[1], 10)).padStart(2, '0');
+  const month = BN_MONTHS[m[2]] || '01';
+  const year = m[3];
+  const hour = String(Number.parseInt(m[4] || '0', 10)).padStart(2, '0');
+  const minute = String(Number.parseInt(m[5] || '0', 10)).padStart(2, '0');
+
+  const isoWithOffset = `${year}-${month}-${day}T${hour}:${minute}:00+06:00`;
+  return toTimestamp(isoWithOffset);
+}
+
+function getArticleTimestamp(article = {}) {
+  return Math.max(
+    toTimestamp(article?.publishedAt),
+    parseBanglaPublishedText(article?.publishedText),
+    toTimestamp(article?.scrapedAt)
+  );
+}
+
+function sortArticlesByPublished(items, sortOrder = 'desc') {
+  const order = String(sortOrder || 'desc').toLowerCase() === 'asc' ? 'asc' : 'desc';
+  const list = Array.isArray(items) ? items.slice() : [];
+
+  list.sort((a, b) => {
+    const aTs = getArticleTimestamp(a);
+    const bTs = getArticleTimestamp(b);
+
+    if (aTs !== bTs) {
+      return order === 'asc' ? aTs - bTs : bTs - aTs;
+    }
+
+    // Stable tie-breaker for deterministic ordering.
+    const aUrl = String(a?.url || '');
+    const bUrl = String(b?.url || '');
+    return aUrl.localeCompare(bUrl);
+  });
+
+  return list;
+}
+
 function getPushConfig(kind = 'articles', overrides = {}) {
   const settings = readSettings();
 
@@ -220,13 +330,17 @@ function getPushConfig(kind = 'articles', overrides = {}) {
 async function pushItemsToEndpoint(items, options = {}) {
   const pushConfig = getPushConfig(options.kind || 'articles', options);
   const payloadKey = pushConfig.kind === 'mobiles' ? 'mobiles' : 'articles';
+  const normalizedItems = Array.isArray(items) ? items : [];
+  const preparedItems = pushConfig.kind === 'articles'
+    ? sortArticlesByPublished(normalizedItems, 'desc')
+    : normalizedItems.slice();
   const pushContext = {
     event: 'push-result',
     kind: pushConfig.kind,
     trigger: options.trigger || 'manual',
     sourceKey: options.sourceKey || null,
     url: pushConfig.url || null,
-    itemCount: Array.isArray(items) ? items.length : 0,
+    itemCount: preparedItems.length,
   };
 
   if (!pushConfig.enabled) {
@@ -249,7 +363,7 @@ async function pushItemsToEndpoint(items, options = {}) {
     return result;
   }
 
-  if (!items.length) {
+  if (!preparedItems.length) {
     const result = {
       kind: pushConfig.kind,
       attempted: true,
@@ -282,17 +396,23 @@ async function pushItemsToEndpoint(items, options = {}) {
   );
   const batchSize = Number.isFinite(configuredBatchSize) && configuredBatchSize > 0
     ? configuredBatchSize
-    : items.length;
+    : preparedItems.length;
   const batches = [];
-  for (let i = 0; i < items.length; i += batchSize) {
-    batches.push(items.slice(i, i + batchSize));
+  for (let i = 0; i < preparedItems.length; i += batchSize) {
+    batches.push(preparedItems.slice(i, i + batchSize));
   }
 
   let pushedCount = 0;
+  let currentBatchMeta = null;
 
   try {
     for (let index = 0; index < batches.length; index += 1) {
       const batchItems = batches[index];
+      currentBatchMeta = {
+        index: index + 1,
+        total: batches.length,
+        size: batchItems.length,
+      };
       // Keep a unified `items` array for easier consumption on the receiver side,
       // while also preserving legacy keys (`articles` / `mobiles`) for compatibility.
       const body = {
@@ -335,6 +455,7 @@ async function pushItemsToEndpoint(items, options = {}) {
           attempted: true,
           success: false,
           count: pushedCount,
+          failedCount: Math.max(0, preparedItems.length - pushedCount),
           url: pushConfig.url,
           error: errorMessage,
           responseText: responseSnippet,
@@ -346,12 +467,12 @@ async function pushItemsToEndpoint(items, options = {}) {
           count: result.count,
           status: 'failed-response',
           httpStatus,
-          batch: {
-            index: index + 1,
-            total: batches.length,
-            size: batchItems.length,
-          },
+          batch: currentBatchMeta,
           error: result.error,
+          errorDetails: toErrorDetails(Object.assign(new Error(errorMessage), {
+            httpStatus,
+            responseSnippet: responseSnippet || undefined,
+          })),
           responseText: result.responseText,
         });
         return result;
@@ -388,9 +509,11 @@ async function pushItemsToEndpoint(items, options = {}) {
       kind: pushConfig.kind,
       attempted: true,
       success: false,
-      count: items.length,
+      count: pushedCount,
+      failedCount: Math.max(0, preparedItems.length - pushedCount),
       url: pushConfig.url,
       error: err.message,
+      errorDetails: toErrorDetails(err),
     };
     logPushEvent({
       ...pushContext,
@@ -398,7 +521,9 @@ async function pushItemsToEndpoint(items, options = {}) {
       success: result.success,
       count: result.count,
       status: 'failed',
+      batch: currentBatchMeta || undefined,
       error: result.error,
+      errorDetails: result.errorDetails,
     });
     return result;
   }
@@ -988,20 +1113,8 @@ app.get('/api/articles', (req, res) => {
 
   const sortOrder = String(sort || 'desc').toLowerCase() === 'asc' ? 'asc' : 'desc';
 
-  // Sort by published time (fallback: scraped time) with configurable order.
-  articles.sort((a, b) => {
-    const bTs = Math.max(
-      toTimestamp(b?.publishedAt),
-      parseBanglaPublishedText(b?.publishedText),
-      toTimestamp(b?.scrapedAt)
-    );
-    const aTs = Math.max(
-      toTimestamp(a?.publishedAt),
-      parseBanglaPublishedText(a?.publishedText),
-      toTimestamp(a?.scrapedAt)
-    );
-    return sortOrder === 'asc' ? aTs - bTs : bTs - aTs;
-  });
+  // Sort by published time globally across all sources.
+  articles = sortArticlesByPublished(articles, sortOrder);
 
   const total = articles.length;
   const pageNum = Number.parseInt(page, 10) || 1;

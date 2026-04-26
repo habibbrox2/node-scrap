@@ -220,6 +220,70 @@
       display: block;
     }
 
+    .page-loading {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      z-index: 220;
+      background: rgba(13, 13, 13, 0.94);
+      color: var(--paper);
+      border: 1px solid #2d2d2d;
+      border-radius: 999px;
+      padding: 0.7rem 1rem;
+      font-family: var(--mono);
+      font-size: 0.74rem;
+      display: none;
+      align-items: center;
+      gap: 0.6rem;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+    }
+
+    .page-loading.visible {
+      display: inline-flex;
+    }
+
+    .status-banner {
+      position: sticky;
+      top: 65px;
+      z-index: 98;
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--rule);
+      font-size: 0.82rem;
+      line-height: 1.5;
+    }
+
+    .status-banner.show {
+      display: flex;
+    }
+
+    .status-banner.info {
+      background: #fff7df;
+      color: #5d4700;
+    }
+
+    .status-banner.success {
+      background: #edf8ef;
+      color: var(--success);
+    }
+
+    .status-banner.error {
+      background: #fdecea;
+      color: #8b1e1e;
+    }
+
+    .status-banner button {
+      border: none;
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+      font-size: 1rem;
+      line-height: 1;
+    }
+
     .page-title {
       font-family: var(--serif);
       font-size: 1.6rem;
@@ -643,6 +707,32 @@
       border-top: 1px solid var(--paper-2);
     }
 
+    .settings-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .settings-note {
+      background: linear-gradient(135deg, #fffdfa, #f5efe3);
+      border: 1px solid var(--rule);
+      border-radius: 6px;
+      padding: 0.9rem 1rem;
+    }
+
+    .settings-note strong {
+      display: block;
+      margin-bottom: 0.2rem;
+    }
+
+    textarea.input.input-multiline {
+      min-height: 118px;
+      resize: vertical;
+      line-height: 1.6;
+      font-family: var(--mono);
+    }
+
     .runs-timeline .run-item {
       display: grid;
       grid-template-columns: 120px 1fr;
@@ -688,6 +778,10 @@
 
       .article-detail-card {
         position: static;
+      }
+
+      .settings-grid {
+        grid-template-columns: 1fr;
       }
     }
 
@@ -813,6 +907,16 @@
       <span id="hdrStatus">Idle</span>
     </div>
   </header>
+
+  <div class="status-banner info" id="statusBanner" role="status" aria-live="polite">
+    <span id="statusBannerText">Loading dashboard...</span>
+    <button type="button" onclick="hideBanner()" aria-label="Dismiss status">×</button>
+  </div>
+
+  <div class="page-loading" id="pageLoading">
+    <span class="spinner"></span>
+    <span id="pageLoadingText">Loading...</span>
+  </div>
 
   <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 
@@ -1104,6 +1208,17 @@
       <div class="page" id="page-settings">
         <div class="page-title">Settings</div>
 
+        <div class="settings-grid">
+          <div class="settings-note">
+            <strong>Windows App Tips</strong>
+            Settings save directly to the local app data folder and apply to the built-in dashboard immediately.
+          </div>
+          <div class="settings-note">
+            <strong>Recommended Flow</strong>
+            Set scrape pacing first, then configure push URLs, then run one manual scrape to confirm the full pipeline.
+          </div>
+        </div>
+
         <div class="card">
           <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem">
             <div style="font-weight:700">Main Settings</div>
@@ -1185,8 +1300,8 @@
             <div style="flex:1; min-width:260px">
               <div style="font-size:0.72rem; color:#888; margin-bottom:0.3rem; font-family:var(--mono)">PUSH HEADERS
                 (JSON)</div>
-              <input type="text" class="input" id="setPushEndpointHeadersJson"
-                placeholder='{\"Authorization\":\"Bearer ...\"}' style="width:100%" />
+              <textarea class="input input-multiline" id="setPushEndpointHeadersJson"
+                placeholder='{"Authorization":"Bearer ..."}' style="width:100%"></textarea>
             </div>
           </div>
 
@@ -1428,6 +1543,73 @@
     let mobilesPage = 1;
     let selectedSource = 'all';
     let availableSources = [];
+    let pollFailureCount = 0;
+    let bannerTimer = null;
+
+    function showBanner(message, type = 'info', timeoutMs = 5000) {
+      const banner = document.getElementById('statusBanner');
+      const text = document.getElementById('statusBannerText');
+      if (!banner || !text) return;
+
+      text.textContent = message;
+      banner.className = `status-banner ${type} show`;
+
+      if (bannerTimer) {
+        clearTimeout(bannerTimer);
+        bannerTimer = null;
+      }
+
+      if (timeoutMs > 0) {
+        bannerTimer = setTimeout(() => {
+          hideBanner();
+        }, timeoutMs);
+      }
+    }
+
+    function hideBanner() {
+      const banner = document.getElementById('statusBanner');
+      if (!banner) return;
+      banner.className = 'status-banner info';
+      if (bannerTimer) {
+        clearTimeout(bannerTimer);
+        bannerTimer = null;
+      }
+    }
+
+    function setGlobalLoading(active, message = 'Loading...') {
+      const wrap = document.getElementById('pageLoading');
+      const text = document.getElementById('pageLoadingText');
+      if (!wrap || !text) return;
+      text.textContent = message;
+      wrap.classList.toggle('visible', Boolean(active));
+    }
+
+    function setButtonBusy(button, busy, busyText) {
+      if (!button) return;
+      if (busy) {
+        if (!button.dataset.originalHtml) {
+          button.dataset.originalHtml = button.innerHTML;
+        }
+        button.disabled = true;
+        button.innerHTML = `<span class="spinner"></span> ${escapeHtml(busyText || 'Working...')}`;
+        return;
+      }
+
+      button.disabled = false;
+      if (button.dataset.originalHtml) {
+        button.innerHTML = button.dataset.originalHtml;
+      }
+    }
+
+    function readJsonInputValue(elementId, fallback = '{}') {
+      const raw = (document.getElementById(elementId)?.value || fallback).trim() || fallback;
+      try {
+        JSON.parse(raw);
+        return raw;
+      } catch {
+        throw new Error('Invalid headers JSON');
+      }
+    }
 
     // ── Mobile sidebar ──
     function toggleSidebar() {
@@ -1465,8 +1647,56 @@
 
     // ── API helpers ──
     async function api(path, opts = {}) {
-      const r = await fetch(path, opts);
-      return r.json();
+      const {
+        retries = (opts.method && opts.method.toUpperCase() !== 'GET') ? 0 : 1,
+        loadingLabel = '',
+        suppressBanner = false,
+        ...fetchOptions
+      } = opts || {};
+
+      let lastError = null;
+
+      if (loadingLabel) {
+        setGlobalLoading(true, loadingLabel);
+      }
+
+      try {
+        for (let attempt = 0; attempt <= retries; attempt += 1) {
+          try {
+            const response = await fetch(path, fetchOptions);
+            const text = await response.text();
+            let data = {};
+
+            try {
+              data = text ? JSON.parse(text) : {};
+            } catch {
+              data = { raw: text };
+            }
+
+            if (!response.ok) {
+              throw new Error(data?.error || data?.message || `Request failed (${response.status})`);
+            }
+
+            return data;
+          } catch (error) {
+            lastError = error;
+            if (attempt < retries) {
+              await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
+              continue;
+            }
+          }
+        }
+      } finally {
+        if (loadingLabel) {
+          setGlobalLoading(false);
+        }
+      }
+
+      if (!suppressBanner && lastError) {
+        showBanner(lastError.message || 'Request failed', 'error', 7000);
+      }
+
+      throw lastError || new Error('Request failed');
     }
 
     // ── API settings ──
@@ -1476,6 +1706,21 @@
       if (!el) return;
       el.textContent = text;
       el.className = `tag ${extraClass}`.trim();
+    }
+
+    function updateSettingsSummary(data = {}) {
+      const pushEnabled = data.pushEnabled !== false;
+      const hasPushUrl = Boolean(
+        (data.pushArticlesEndpointUrl || data.pushEndpointUrl || '').trim() ||
+        (data.pushMobilesEndpointUrl || '').trim()
+      );
+
+      if (!pushEnabled) {
+        setBadge('mainSettingsStatus', 'Push Off', 'red');
+        return;
+      }
+
+      setBadge('mainSettingsStatus', hasPushUrl ? 'Ready' : 'Needs URL', hasPushUrl ? 'green' : '');
     }
 
     function applySettingsToInputs(data) {
@@ -1531,12 +1776,12 @@
       const pushEnabled = data.pushEnabled !== false;
       const hasAnyUrl = pushArticlesUrl.trim().length > 0 || pushMobilesUrl.trim().length > 0;
       setBadge('apiSettingsStatus', !pushEnabled ? 'Push Off' : (hasAnyUrl ? 'Loaded' : 'Disabled'), !pushEnabled ? 'red' : (hasAnyUrl ? 'green' : ''));
-      setBadge('mainSettingsStatus', 'Loaded', 'green');
+      updateSettingsSummary(data);
     }
 
     async function loadMainSettings() {
       try {
-        const data = await api('/api/settings');
+        const data = await api('/api/settings', { loadingLabel: 'Loading settings...' });
         applySettingsToInputs(data);
         return data;
       } catch (e) {
@@ -1547,36 +1792,45 @@
     }
 
     async function saveMainSettings() {
-      const headersJson = (document.getElementById('setPushEndpointHeadersJson')?.value || '{}').trim();
-      if (headersJson) {
-        try { JSON.parse(headersJson); } catch { return alert('Invalid headers JSON'); }
+      let headersJson = '{}';
+      try {
+        headersJson = readJsonInputValue('setPushEndpointHeadersJson');
+      } catch (error) {
+        showBanner(error.message, 'error', 6000);
+        return;
       }
 
       setBadge('mainSettingsStatus', 'Saving...');
 
-      const result = await api('/api/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          scrapeMaxItems: (document.getElementById('setScrapeMaxItems')?.value || '10').trim(),
-          scrapeDelayMs: (document.getElementById('setScrapeDelayMs')?.value || '300').trim(),
-          scrapeRequestMinIntervalMs: (document.getElementById('setScrapeRequestMinIntervalMs')?.value || '150').trim(),
-          pushEnabled: Boolean(document.getElementById('setPushEnabled')?.checked),
-          pushArticlesEnabled: Boolean(document.getElementById('setPushArticlesEnabled')?.checked),
-          pushMobilesEnabled: Boolean(document.getElementById('setPushMobilesEnabled')?.checked),
-          pushEndpointUrl: (document.getElementById('setPushEndpointUrl')?.value || '').trim(),
-          pushArticlesEndpointUrl: (document.getElementById('setPushArticlesEndpointUrl')?.value || '').trim(),
-          pushMobilesEndpointUrl: (document.getElementById('setPushMobilesEndpointUrl')?.value || '').trim(),
-          pushEndpointHeadersJson: headersJson || '{}',
-          cacheMaxArticles: (document.getElementById('setCacheMaxArticles')?.value || '500').trim(),
-          cacheMaxMobiles: (document.getElementById('setCacheMaxMobiles')?.value || '500').trim(),
-          cacheAutoClearEnabled: Boolean(document.getElementById('setCacheAutoClearEnabled')?.checked),
-          cacheRetentionHours: (document.getElementById('setCacheRetentionHours')?.value || '0').trim(),
-        }),
-      });
+      try {
+        const result = await api('/api/settings', {
+          method: 'POST',
+          loadingLabel: 'Saving settings...',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            scrapeMaxItems: (document.getElementById('setScrapeMaxItems')?.value || '10').trim(),
+            scrapeDelayMs: (document.getElementById('setScrapeDelayMs')?.value || '300').trim(),
+            scrapeRequestMinIntervalMs: (document.getElementById('setScrapeRequestMinIntervalMs')?.value || '150').trim(),
+            pushEnabled: Boolean(document.getElementById('setPushEnabled')?.checked),
+            pushArticlesEnabled: Boolean(document.getElementById('setPushArticlesEnabled')?.checked),
+            pushMobilesEnabled: Boolean(document.getElementById('setPushMobilesEnabled')?.checked),
+            pushEndpointUrl: (document.getElementById('setPushEndpointUrl')?.value || '').trim(),
+            pushArticlesEndpointUrl: (document.getElementById('setPushArticlesEndpointUrl')?.value || '').trim(),
+            pushMobilesEndpointUrl: (document.getElementById('setPushMobilesEndpointUrl')?.value || '').trim(),
+            pushEndpointHeadersJson: headersJson || '{}',
+            cacheMaxArticles: (document.getElementById('setCacheMaxArticles')?.value || '500').trim(),
+            cacheMaxMobiles: (document.getElementById('setCacheMaxMobiles')?.value || '500').trim(),
+            cacheAutoClearEnabled: Boolean(document.getElementById('setCacheAutoClearEnabled')?.checked),
+            cacheRetentionHours: (document.getElementById('setCacheRetentionHours')?.value || '0').trim(),
+          }),
+        });
 
-      applySettingsToInputs(result);
-      setBadge('mainSettingsStatus', 'Saved', 'green');
+        applySettingsToInputs(result);
+        setBadge('mainSettingsStatus', 'Saved', 'green');
+        showBanner('Settings saved successfully.', 'success', 3500);
+      } catch {
+        setBadge('mainSettingsStatus', 'Save Failed', 'red');
+      }
     }
 
     async function loadApiSettings() {
@@ -1593,7 +1847,10 @@
       const rawHeadersJson = (headersInput?.value || '').trim();
 
       if (rawHeadersJson) {
-        try { JSON.parse(rawHeadersJson); } catch { return alert('Invalid headers JSON'); }
+        try { JSON.parse(rawHeadersJson); } catch {
+          showBanner('Invalid headers JSON', 'error', 6000);
+          return;
+        }
       }
 
       if (badge) {
@@ -1601,26 +1858,33 @@
         badge.className = 'tag';
       }
 
-      const result = await api('/api/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          pushArticlesEndpointUrl,
-          pushMobilesEndpointUrl,
-          pushEndpointHeadersJson: rawHeadersJson || '{}',
-        }),
-      });
+      try {
+        const result = await api('/api/settings', {
+          method: 'POST',
+          loadingLabel: 'Saving push settings...',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            pushArticlesEndpointUrl,
+            pushMobilesEndpointUrl,
+            pushEndpointHeadersJson: rawHeadersJson || '{}',
+          }),
+        });
 
-      applySettingsToInputs(result);
-      const pushEnabled = result.pushEnabled !== false;
-      const hasUrl = (result.pushArticlesEndpointUrl || '').trim().length > 0 || (result.pushMobilesEndpointUrl || '').trim().length > 0;
-      setBadge('apiSettingsStatus', !pushEnabled ? 'Push Off' : (hasUrl ? 'Saved' : 'Disabled'), !pushEnabled ? 'red' : (hasUrl ? 'green' : ''));
+        applySettingsToInputs(result);
+        const pushEnabled = result.pushEnabled !== false;
+        const hasUrl = (result.pushArticlesEndpointUrl || '').trim().length > 0 || (result.pushMobilesEndpointUrl || '').trim().length > 0;
+        setBadge('apiSettingsStatus', !pushEnabled ? 'Push Off' : (hasUrl ? 'Saved' : 'Disabled'), !pushEnabled ? 'red' : (hasUrl ? 'green' : ''));
+        showBanner('Push settings updated.', 'success', 3000);
+      } catch {
+        setBadge('apiSettingsStatus', 'Save Failed', 'red');
+      }
     }
 
     // ── Status poll ──
     async function pollStatus() {
       try {
-        const data = await api('/api/status');
+        const data = await api('/api/status', { retries: 1, suppressBanner: true });
+        pollFailureCount = 0;
         const running = data.scraper?.running;
 
         // Header
@@ -1647,6 +1911,8 @@
           if (scrapeBtn) { scrapeBtn.disabled = false; scrapeBtn.innerHTML = '▶ Start Scrape'; }
         }
 
+        hideBanner();
+
         // Scraper page log
         const badge = document.getElementById('scrapeStatusBadge');
         if (badge) {
@@ -1663,11 +1929,18 @@
           if (data.scraper?.lastResult) renderLastResult(data.scraper.lastResult);
         }
 
-      } catch (e) { /* server offline */ }
+      } catch (e) {
+        pollFailureCount += 1;
+        if (pollFailureCount >= 2) {
+          showBanner('Local dashboard is temporarily unreachable. Retrying automatically...', 'error', 0);
+        }
+        setBadge('apiSettingsStatus', 'Offline', 'red');
+        setBadge('mainSettingsStatus', 'Offline', 'red');
+      }
     }
 
     async function refreshLog() {
-      const data = await api('/api/scrape/log');
+      const data = await api('/api/scrape/log', { suppressBanner: true });
       renderLog(data.log);
       if (!data.running && pollInterval) {
         clearInterval(pollInterval);
@@ -1945,9 +2218,9 @@
     async function copyArticleUrl(url) {
       try {
         await navigator.clipboard.writeText(url);
-        alert('Article URL copied');
+        showBanner('URL copied to clipboard.', 'success', 2500);
       } catch (error) {
-        alert('Could not copy article URL');
+        showBanner('Could not copy the URL.', 'error', 4000);
       }
     }
 
@@ -2066,8 +2339,12 @@
     }
 
     async function loadSources() {
-      const data = await api('/api/status');
-      availableSources = data.sources || [];
+      try {
+        const data = await api('/api/status', { suppressBanner: true });
+        availableSources = data.sources || [];
+      } catch {
+        availableSources = [];
+      }
 
       const sel = document.getElementById('sourceSelect');
       if (!sel) return;
@@ -2098,14 +2375,27 @@
 
     // ── Scraper trigger ──
     async function triggerScrape() {
-      if (document.getElementById('triggerBtn').disabled) return;
-      await api('/api/scrape', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ source: selectedSource || undefined }),
-      });
-      showPage('scraper');
-      setTimeout(pollStatus, 500);
+      const triggerBtn = document.getElementById('triggerBtn');
+      const scrapeBtn = document.getElementById('scrapeBtn');
+      if (triggerBtn?.disabled) return;
+
+      setButtonBusy(triggerBtn, true, 'Starting...');
+      setButtonBusy(scrapeBtn, true, 'Starting...');
+
+      try {
+        const response = await api('/api/scrape', {
+          method: 'POST',
+          loadingLabel: 'Starting scrape...',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ source: selectedSource || undefined }),
+        });
+        showPage('scraper');
+        showBanner(response.message || 'Scrape started successfully.', 'success', 3000);
+        setTimeout(pollStatus, 500);
+      } catch (error) {
+        setButtonBusy(triggerBtn, false);
+        setButtonBusy(scrapeBtn, false);
+      }
     }
 
     // ── Clear cache ──
@@ -2136,13 +2426,20 @@
     async function addCron() {
       const schedule = document.getElementById('cronSchedule').value.trim();
       const name = document.getElementById('cronName').value.trim() || 'custom';
-      if (!schedule) return alert('Enter a cron schedule');
+      if (!schedule) {
+        showBanner('Enter a cron schedule first.', 'info', 3500);
+        return;
+      }
       const r = await api('/api/cron', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'start', schedule, name })
       });
-      if (r.error) return alert(r.error);
+      if (r.error) {
+        showBanner(r.error, 'error', 5000);
+        return;
+      }
+      showBanner(`Cron job "${name}" started.`, 'success', 3000);
       loadCronJobs();
     }
 
@@ -2219,50 +2516,44 @@
     async function manualPushArticles() {
       const btn = document.getElementById('manualPushArticlesBtn');
       if (!btn) return;
-
-      const originalText = btn.textContent;
-      btn.disabled = true;
-      btn.textContent = 'Pushing...';
+      setButtonBusy(btn, true, 'Pushing...');
 
       try {
         const response = await api('/api/push/manual', {
           method: 'POST',
+          loadingLabel: 'Pushing articles...',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ type: 'articles' }),
         });
 
         await loadPushLogs();
-        alert(response.message || 'Articles pushed successfully');
+        showBanner(response.message || 'Articles pushed successfully.', 'success', 4000);
       } catch (e) {
-        alert('Failed to push articles: ' + (e.message || 'Unknown error'));
+        showBanner('Failed to push articles: ' + (e.message || 'Unknown error'), 'error', 6000);
       } finally {
-        btn.disabled = false;
-        btn.textContent = originalText;
+        setButtonBusy(btn, false);
       }
     }
 
     async function manualPushMobiles() {
       const btn = document.getElementById('manualPushMobilesBtn');
       if (!btn) return;
-
-      const originalText = btn.textContent;
-      btn.disabled = true;
-      btn.textContent = 'Pushing...';
+      setButtonBusy(btn, true, 'Pushing...');
 
       try {
         const response = await api('/api/push/manual', {
           method: 'POST',
+          loadingLabel: 'Pushing mobiles...',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ type: 'mobiles' }),
         });
 
         await loadPushLogs();
-        alert(response.message || 'Mobiles pushed successfully');
+        showBanner(response.message || 'Mobiles pushed successfully.', 'success', 4000);
       } catch (e) {
-        alert('Failed to push mobiles: ' + (e.message || 'Unknown error'));
+        showBanner('Failed to push mobiles: ' + (e.message || 'Unknown error'), 'error', 6000);
       } finally {
-        btn.disabled = false;
-        btn.textContent = originalText;
+        setButtonBusy(btn, false);
       }
     }
 

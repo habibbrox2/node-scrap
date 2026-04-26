@@ -3,6 +3,7 @@ const ittefaq = require('./ittefaq');
 const gsmarena_bd = require('./gsmarena_bd');
 const dainikshiksha = require('./dainikshiksha');
 const bdnews24 = require('./bdnews24');
+const banglatribune = require('./banglatribune');
 
 const SCRAPERS = {
   prothomalo,
@@ -13,6 +14,8 @@ const SCRAPERS = {
   shiksha: dainikshiksha,
   bdnews24,
   bdnews24_special: bdnews24,
+  banglatribune,
+  bangla_tribune: banglatribune,
 };
 
 const PRIMARY_SOURCES = [
@@ -21,6 +24,7 @@ const PRIMARY_SOURCES = [
   'gsmarena_bd',
   'dainikshiksha',
   'bdnews24',
+  'banglatribune',
 ];
 
 function getScraper(source) {

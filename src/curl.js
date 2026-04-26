@@ -287,31 +287,69 @@ async function curlGet(url, options = {}) {
 
 async function curlPostJson(url, payload, options = {}) {
   const { headers = {}, timeout = 30000 } = options;
+  const { maxRetries } = getRequestConfig();
+  const attempts = Math.max(0, maxRetries) + 1;
   const body = JSON.stringify(payload);
   const statusMarker = '__CURL_HTTP_STATUS__:';
-  const response = await scheduleRequest(() => {
-    const args = [
-      '--silent',
-      '--show-error',
-      '--location',
-      '--compressed',
-      '-X',
-      'POST',
-      ...buildHeaderArgs({
-        'Content-Type': 'application/json',
-        ...headers,
-      }),
-      '--data-binary',
-      '@-',
-      '--write-out',
-      `\n${statusMarker}%{http_code}`,
-      url,
-    ];
+  let lastError = null;
 
-    return runCurl(args, { input: body, timeout });
-  });
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      const response = await scheduleRequest(() => {
+        const args = [
+          '--silent',
+          '--show-error',
+          '--location',
+          '--compressed',
+          '-X',
+          'POST',
+          ...buildHeaderArgs({
+            'Content-Type': 'application/json',
+            ...headers,
+          }),
+          '--data-binary',
+          '@-',
+          '--write-out',
+          `\n${statusMarker}%{http_code}`,
+          url,
+        ];
 
-  return parseCurlHttpResponse(response.stdout, statusMarker);
+        return runCurl(args, { input: body, timeout });
+      });
+
+      const parsed = parseCurlHttpResponse(response.stdout, statusMarker);
+      const statusCode = Number.parseInt(parsed?.statusCode, 10) || 0;
+      if (attempt < attempts && (statusCode === 429 || statusCode >= 500)) {
+        const httpErr = buildHttpError(
+          `curl POST failed with HTTP ${statusCode}`,
+          {
+            statusCode,
+            body: parsed.body,
+            timeout,
+            stderr: response.stderr,
+            exitCode: 0,
+            timedOut: false,
+          }
+        );
+        lastError = httpErr;
+        await sleep(computeRetryDelay(attempt));
+        continue;
+      }
+
+      return parsed;
+    } catch (err) {
+      lastError = err;
+      const statusCode = Number.parseInt(err?.httpStatus, 10) || 0;
+      if (attempt < attempts && isRetryableCurlError(err, statusCode)) {
+        await sleep(computeRetryDelay(attempt));
+        continue;
+      }
+
+      throw err;
+    }
+  }
+
+  throw lastError || new Error('curl POST failed');
 }
 
 async function curlPostForm(url, payload, options = {}) {

@@ -1,12 +1,33 @@
 const fs = require('fs');
 const path = require('path');
-const { DatabaseSync } = require('node:sqlite');
 const { getCacheDir, ensureDir } = require('./appPaths');
 
 const CACHE_DIR = getCacheDir();
 const DB_FILE = path.join(CACHE_DIR, 'brox.sqlite');
 
 let db = null;
+let sqliteModuleChecked = false;
+let sqliteUnavailableReason = null;
+let DatabaseSyncRef = null;
+
+function getDatabaseSync() {
+  if (sqliteModuleChecked) {
+    return DatabaseSyncRef;
+  }
+
+  sqliteModuleChecked = true;
+
+  try {
+    const sqlite = require('node:sqlite');
+    DatabaseSyncRef = sqlite.DatabaseSync;
+    return DatabaseSyncRef;
+  } catch (err) {
+    sqliteUnavailableReason = err;
+    console.warn('[DB] SQLite disabled:', err.message);
+    DatabaseSyncRef = null;
+    return null;
+  }
+}
 
 function ensureCacheDir() {
   ensureDir(CACHE_DIR);
@@ -14,6 +35,10 @@ function ensureCacheDir() {
 
 function getDb() {
   if (db) return db;
+  const DatabaseSync = getDatabaseSync();
+  if (!DatabaseSync) {
+    return null;
+  }
   ensureCacheDir();
   db = new DatabaseSync(DB_FILE);
 
@@ -59,6 +84,13 @@ function getDb() {
 
 function upsertContentItems(items, context = {}) {
   const database = getDb();
+  if (!database) {
+    return {
+      insertedOrUpdated: 0,
+      disabled: true,
+      reason: sqliteUnavailableReason ? sqliteUnavailableReason.message : 'node:sqlite not available',
+    };
+  }
   if (!Array.isArray(items) || !items.length) return { insertedOrUpdated: 0 };
 
   const now = new Date().toISOString();
@@ -108,6 +140,13 @@ function upsertContentItems(items, context = {}) {
 
 function insertScrapeRun(runResult) {
   const database = getDb();
+  if (!database) {
+    return {
+      inserted: false,
+      disabled: true,
+      reason: sqliteUnavailableReason ? sqliteUnavailableReason.message : 'node:sqlite not available',
+    };
+  }
   const stmt = database.prepare(`
     INSERT INTO scrape_runs (
       runAt, trigger, sourceKey, total, success, failed, pushed, pushSuccess, pushedCount, pushUrl, payload

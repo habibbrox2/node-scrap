@@ -35,6 +35,7 @@ module.exports = {
         createDesktopShortcut: true,
         createStartMenuShortcut: true,
         shortcutName: 'Brox Scraper',
+        include: 'build/installer.nsh',
     },
     portable: {
         artifactName: '${productName}-${version}-portable.exe',
