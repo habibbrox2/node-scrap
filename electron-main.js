@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const { spawn } = require('child_process');
 const net = require('net');
+const http = require('http');
 
 let mainWindow;
 let serverProcess;
@@ -32,7 +33,7 @@ function isPortInUse(port) {
 }
 
 function createWindow() {
-    mainWindow = new BrowserWindow({
+    const windowConfig = {
         width: 1400,
         height: 900,
         minWidth: 800,
@@ -43,13 +44,20 @@ function createWindow() {
             contextIsolation: true,
             enableRemoteModule: false,
         },
-        icon: path.join(__dirname, 'assets', 'icon.png'),
-    });
+    };
+
+    // Add icon if it exists
+    const iconPath = path.join(__dirname, 'assets', 'icon.png');
+    if (fs.existsSync(iconPath)) {
+        windowConfig.icon = iconPath;
+    }
+
+    mainWindow = new BrowserWindow(windowConfig);
 
     mainWindow.loadURL(SERVER_URL);
 
     // Open DevTools in development
-    // mainWindow.webContents.openDevTools();
+    mainWindow.webContents.openDevTools({ mode: 'detach' });
 
     mainWindow.on('closed', () => {
         mainWindow = null;
@@ -118,68 +126,138 @@ function createApplicationMenu() {
 }
 
 function startServer() {
-    return new Promise(async (resolve, reject) => {
-        // Check if server is already running
-        if (serverProcess && !serverProcess.killed) {
-            console.log('Server already running');
-            resolve();
-            return;
-        }
+    return new Promise((resolve, reject) => {
+        (async () => {
+            try {
+                // Check if server is already running
+                if (serverProcess && !serverProcess.killed) {
+                    console.log('[Electron] Server already running');
+                    resolve();
+                    return;
+                }
 
-        // Check if port is in use
-        const portInUse = await isPortInUse(SERVER_PORT);
-        if (portInUse) {
-            console.log(`Port ${SERVER_PORT} already in use, killing existing process...`);
-            // Try to kill any existing process on this port
-            if (process.platform === 'win32') {
-                spawn('taskkill', ['/F', '/IM', 'node.exe'], { stdio: 'ignore' });
-            } else {
-                spawn('killall', ['node'], { stdio: 'ignore' });
+                console.log('[Electron] Starting server...');
+                console.log('[Electron] Main script path:', mainScriptPath);
+                console.log('[Electron] Server port:', SERVER_PORT);
+                console.log('[Electron] Working directory:', __dirname);
+
+                // Check if port is in use
+                const portInUse = await isPortInUse(SERVER_PORT);
+                console.log('[Electron] Port', SERVER_PORT, 'in use:', portInUse);
+
+                if (portInUse) {
+                    console.log(`[Electron] Port ${SERVER_PORT} already in use, killing existing node processes...`);
+                    // Try to kill any existing process on this port
+                    if (process.platform === 'win32') {
+                        spawn('taskkill', ['/F', '/IM', 'node.exe'], { stdio: 'ignore' });
+                    } else {
+                        spawn('killall', ['node'], { stdio: 'ignore' });
+                    }
+                    // Wait a bit for the port to be freed
+                    await new Promise(r => setTimeout(r, 2000));
+                }
+
+                console.log('[Electron] Spawning Node.js process for:', mainScriptPath);
+
+                // Start the Node.js server
+                serverProcess = spawn('node', [mainScriptPath], {
+                    stdio: ['inherit', 'pipe', 'pipe'],
+                    shell: false,
+                    detached: false,
+                    cwd: __dirname,
+                    env: { ...process.env },
+                });
+
+                console.log('[Electron] Node process spawned, PID:', serverProcess.pid);
+
+                if (!serverProcess.pid) {
+                    throw new Error('Failed to spawn Node.js process - no PID');
+                }
+
+                let isResolved = false;
+                let hasOutput = false;
+
+                serverProcess.stdout.on('data', (data) => {
+                    hasOutput = true;
+                    const output = data.toString().trim();
+                    console.log(`[Server stdout] ${output}`);
+
+                    if (!isResolved && (output.includes('listening') || output.includes('running') || output.includes('9999') || output.includes('http://'))) {
+                        console.log('[Electron] Server ready detected');
+                        isResolved = true;
+                        resolve();
+                    }
+                });
+
+                serverProcess.stderr.on('data', (data) => {
+                    hasOutput = true;
+                    const output = data.toString().trim();
+                    console.error(`[Server stderr] ${output}`);
+                });
+
+                serverProcess.on('error', (err) => {
+                    console.error('[Electron] Process error:', err);
+                    if (!isResolved) {
+                        isResolved = true;
+                        reject(new Error(`Process error: ${err.message}`));
+                    }
+                });
+
+                serverProcess.on('exit', (code, signal) => {
+                    console.log(`[Electron] Server process exited with code ${code}, signal ${signal}`);
+                    if (!isResolved && code !== 0) {
+                        isResolved = true;
+                        reject(new Error(`Process exited with code ${code}`));
+                    }
+                });
+
+                // Health check - try connecting to server
+                const healthCheck = setInterval(() => {
+                    if (isResolved) {
+                        clearInterval(healthCheck);
+                        return;
+                    }
+
+                    const req = http.get(`http://localhost:${SERVER_PORT}`, (res) => {
+                        console.log('[Electron] Health check successful, HTTP status:', res.statusCode);
+                        clearInterval(healthCheck);
+                        if (!isResolved) {
+                            isResolved = true;
+                            resolve();
+                        }
+                    });
+
+                    req.on('error', (e) => {
+                        // Server not ready yet - continue checking
+                    });
+
+                    req.setTimeout(1000);
+                }, 500);
+
+                // Timeout - assume server started after 15 seconds
+                setTimeout(() => {
+                    if (!isResolved) {
+                        clearInterval(healthCheck);
+                        console.log('[Electron] Server startup timeout (15s)');
+                        console.log('[Electron] Process had output:', hasOutput);
+                        console.log('[Electron] Process alive:', serverProcess && !serverProcess.killed);
+
+                        if (hasOutput && serverProcess && !serverProcess.killed) {
+                            console.log('[Electron] Assuming server is running');
+                            isResolved = true;
+                            resolve();
+                        } else {
+                            reject(new Error('Server startup timeout - no output received'));
+                        }
+                    }
+                }, 15000);
+            } catch (err) {
+                console.error('[Electron] startServer error:', err);
+                if (!isResolved) {
+                    reject(err);
+                }
             }
-            // Wait a bit for the port to be freed
-            await new Promise(r => setTimeout(r, 1000));
-        }
-
-        // Start the Node.js server
-        serverProcess = spawn('node', [mainScriptPath], {
-            stdio: 'pipe',
-            shell: false,
-            detached: false,
-        });
-
-        let isResolved = false;
-
-        serverProcess.stdout.on('data', (data) => {
-            console.log(`[Server] ${data}`);
-            if (!isResolved && (data.toString().includes('listening') || data.toString().includes('Server running') || data.toString().includes('PORT'))) {
-                isResolved = true;
-                resolve();
-            }
-        });
-
-        serverProcess.stderr.on('data', (data) => {
-            console.error(`[Server Error] ${data}`);
-        });
-
-        serverProcess.on('error', (err) => {
-            console.error('Failed to start server:', err);
-            if (!isResolved) {
-                isResolved = true;
-                reject(err);
-            }
-        });
-
-        serverProcess.on('exit', (code) => {
-            console.log(`Server exited with code ${code}`);
-        });
-
-        // Timeout - assume server started after 5 seconds
-        setTimeout(() => {
-            if (!isResolved) {
-                isResolved = true;
-                resolve();
-            }
-        }, 5000);
+        })();
     });
 }
 
@@ -201,17 +279,26 @@ ipcMain.handle('app-name', () => {
 
 app.on('ready', async () => {
     try {
-        console.log('শুরু করা হচ্ছে...');
+        console.log('[Electron] App ready, starting server...');
+        console.log('[Electron] index.js path:', mainScriptPath);
+        console.log('[Electron] index.js exists:', fs.existsSync(mainScriptPath));
+
         await startServer();
-        console.log('সার্ভার শুরু হয়েছে');
+        console.log('[Electron] Server started successfully');
 
         // Wait a bit for server to fully start
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 2000));
 
+        console.log('[Electron] Creating window...');
         createWindow();
+        console.log('[Electron] Window created successfully');
     } catch (err) {
-        console.error('ত্রুটি:', err);
-        dialog.showErrorBox('স্টার্টআপ ত্রুটি', 'অ্যাপ্লিকেশন শুরু করতে ব্যর্থ হয়েছে।');
+        console.error('[Electron] Startup error:', err);
+        console.error('[Electron] Error message:', err.message);
+        console.error('[Electron] Error stack:', err.stack);
+
+        // Show error with null parent (will use system default)
+        dialog.showErrorBox('স্টার্টআপ ত্রুটি', 'অ্যাপ্লিকেশন শুরু করতে ব্যর্থ হয়েছে: ' + (err.message || 'অজানা ত্রুটি'));
         app.quit();
     }
 });
