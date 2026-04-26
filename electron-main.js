@@ -2,6 +2,7 @@ const { app, BrowserWindow, Menu, dialog, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { spawn } = require('child_process');
+const net = require('net');
 
 let mainWindow;
 let serverProcess;
@@ -10,6 +11,25 @@ const SERVER_URL = `http://localhost:${SERVER_PORT}`;
 
 // Path to the main index.js
 const mainScriptPath = path.join(__dirname, 'index.js');
+
+// Check if port is in use
+function isPortInUse(port) {
+    return new Promise((resolve) => {
+        const server = net.createServer()
+            .once('error', (err) => {
+                if (err.code === 'EADDRINUSE') {
+                    resolve(true);
+                } else {
+                    resolve(false);
+                }
+            })
+            .once('listening', () => {
+                server.close();
+                resolve(false);
+            })
+            .listen(port);
+    });
+}
 
 function createWindow() {
     mainWindow = new BrowserWindow({
@@ -33,6 +53,9 @@ function createWindow() {
 
     mainWindow.on('closed', () => {
         mainWindow = null;
+        // Don't kill the server when window closes
+        // User can reopen the window and server continues running
+        console.log('Window closed, but server continues running');
     });
 
     // Create menu
@@ -95,16 +118,41 @@ function createApplicationMenu() {
 }
 
 function startServer() {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
+        // Check if server is already running
+        if (serverProcess && !serverProcess.killed) {
+            console.log('Server already running');
+            resolve();
+            return;
+        }
+
+        // Check if port is in use
+        const portInUse = await isPortInUse(SERVER_PORT);
+        if (portInUse) {
+            console.log(`Port ${SERVER_PORT} already in use, killing existing process...`);
+            // Try to kill any existing process on this port
+            if (process.platform === 'win32') {
+                spawn('taskkill', ['/F', '/IM', 'node.exe'], { stdio: 'ignore' });
+            } else {
+                spawn('killall', ['node'], { stdio: 'ignore' });
+            }
+            // Wait a bit for the port to be freed
+            await new Promise(r => setTimeout(r, 1000));
+        }
+
         // Start the Node.js server
         serverProcess = spawn('node', [mainScriptPath], {
             stdio: 'pipe',
-            shell: true,
+            shell: false,
+            detached: false,
         });
+
+        let isResolved = false;
 
         serverProcess.stdout.on('data', (data) => {
             console.log(`[Server] ${data}`);
-            if (data.toString().includes('listening') || data.toString().includes('Server running')) {
+            if (!isResolved && (data.toString().includes('listening') || data.toString().includes('Server running') || data.toString().includes('PORT'))) {
+                isResolved = true;
                 resolve();
             }
         });
@@ -115,13 +163,23 @@ function startServer() {
 
         serverProcess.on('error', (err) => {
             console.error('Failed to start server:', err);
-            reject(err);
+            if (!isResolved) {
+                isResolved = true;
+                reject(err);
+            }
         });
 
-        // Timeout - assume server started after 3 seconds
+        serverProcess.on('exit', (code) => {
+            console.log(`Server exited with code ${code}`);
+        });
+
+        // Timeout - assume server started after 5 seconds
         setTimeout(() => {
-            resolve();
-        }, 3000);
+            if (!isResolved) {
+                isResolved = true;
+                resolve();
+            }
+        }, 5000);
     });
 }
 
@@ -159,14 +217,28 @@ app.on('ready', async () => {
 });
 
 app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') {
+    // On Windows and Linux, do not quit when window closes
+    // Only quit on macOS when all windows are closed
+    if (process.platform === 'darwin') {
         app.quit();
     }
+    // On Windows/Linux, keep the app running
 });
 
-app.on('activate', () => {
-    if (mainWindow === null) {
-        createWindow();
+app.on('activate', async () => {
+    // On macOS, re-create window and restart server if needed
+    try {
+        if (mainWindow === null) {
+            // Check if server is still running
+            if (!serverProcess || serverProcess.killed) {
+                console.log('Server not running, restarting...');
+                await startServer();
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+            createWindow();
+        }
+    } catch (err) {
+        console.error('Error on activate:', err);
     }
 });
 
